@@ -75,31 +75,34 @@ const Dashboard = () => {
                 };
             });
         } else if (viewMode === 'Day') {
-            // Day View: Hourly Breakdown
-            rangeStart = startOfDay(currentDate);
-            rangeEnd = rangeStart; // Same day
-            const hours = Array.from({ length: 24 }, (_, i) => i);
+            // Day View: Task Timeline
             const dayStr = format(currentDate, 'yyyy-MM-dd');
             const dayTasks = tasks.filter(t => t.date === dayStr);
 
-            chartData = hours.map(hour => {
-                // Filter tasks active in this hour
-                const activeInHour = dayTasks.filter(t => {
-                    if (!t.startTime) return false;
-                    const [startH] = t.startTime.split(':').map(Number);
-                    // For simplicity, count task if it starts in this hour
-                    return startH === hour;
-                });
-                const completedInHour = activeInHour.filter(t => t.completed).length;
+            const parseTime = (timeStr) => {
+                if (!timeStr) return 0;
+                const [h, m] = timeStr.split(':').map(Number);
+                return h + (m / 60);
+            };
+
+            chartData = dayTasks.map(t => {
+                const start = parseTime(t.startTime);
+                const end = parseTime(t.endTime);
+                let duration = end - start;
+                // Handle crossing midnight simply (assuming single day view mostly)
+                if (duration < 0) duration += 24;
 
                 return {
-                    dateLabel: format(new Date().setHours(hour), 'h a'),
-                    fullDate: new Date(currentDate).setHours(hour),
-                    total: activeInHour.length, // Using total tasks as value instead of rate for hourly
-                    completed: completedInHour,
-                    rate: activeInHour.length > 0 ? (completedInHour / activeInHour.length) * 100 : 0
+                    name: t.title,
+                    start: start, // Offset from 0
+                    duration: duration, // Length of bar
+                    end: end,
+                    completed: t.completed,
+                    color: t.category?.color || '#3b82f6', // Default to blue if no category
+                    fullTask: t,
+                    total: 1
                 };
-            });
+            }).sort((a, b) => a.start - b.start);
         }
 
         // 2. Category Breakdown (Pie) - Filtered by current view range
@@ -169,6 +172,7 @@ const Dashboard = () => {
         // 5. Today's Progress (Always for Today, strictly today in real-time)
         const todayStr = format(today, 'yyyy-MM-dd');
         const todayTasks = tasks.filter(t => t.date === todayStr);
+        console.log('Today Tasks:', todayTasks);
         const todayCompleted = todayTasks.filter(t => t.completed).length;
         const todayRate = todayTasks.length > 0 ? Math.round((todayCompleted / todayTasks.length) * 100) : 0;
 
@@ -260,6 +264,7 @@ const Dashboard = () => {
                     <h3 className="text-muted font-bold mb-4">Total Tasks in Period</h3>
                     <p className="text-2xl font-bold">
                         {stats.chartData.reduce((acc, curr) => acc + (curr.total || 0), 0)}
+                        {console.log(stats.chartData)}
                     </p>
                     <p className="text-xs text-muted mt-4">For selected {viewMode.toLowerCase()}</p>
                 </div>
@@ -272,19 +277,33 @@ const Dashboard = () => {
                     <h3 className="text-lg font-bold mb-4">
                         {viewMode === 'Day' ? 'Hourly Activity' : 'Completion Consistency'}
                     </h3>
-                    <div style={{ height: '300px', width: '100%' }}>
+                    <div style={{ height: '500px', width: '100%' }}>
                         <ResponsiveContainer width="100%" height="100%">
                             {viewMode === 'Day' ? (
-                                <BarChart data={stats.chartData}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="var(--bg-tertiary)" vertical={false} />
+                                <BarChart
+                                    layout="vertical"
+                                    data={stats.chartData}
+                                    margin={{ top: 20, right: 30, left: 40, bottom: 5 }}
+                                >
+                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--bg-tertiary)" />
                                     <XAxis
-                                        dataKey="dateLabel"
+                                        type="number"
+                                        domain={[0, 24]}
+                                        ticks={[0, 4, 8, 12, 16, 20, 24]}
+                                        tickFormatter={(tick) => {
+                                            if (tick === 0 || tick === 24) return '12 AM';
+                                            if (tick === 12) return '12 PM';
+                                            return tick > 12 ? `${tick - 12} PM` : `${tick} AM`;
+                                        }}
                                         stroke="var(--text-muted)"
                                         fontSize={12}
                                         tickLine={false}
                                         axisLine={false}
                                     />
                                     <YAxis
+                                        type="category"
+                                        dataKey="name"
+                                        width={100}
                                         stroke="var(--text-muted)"
                                         fontSize={12}
                                         tickLine={false}
@@ -293,8 +312,25 @@ const Dashboard = () => {
                                     <RechartsTooltip
                                         cursor={{ fill: 'var(--bg-secondary)' }}
                                         contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--glass-border)', color: 'white' }}
+                                        formatter={(value, name) => [
+                                            name === 'duration' ? `${value.toFixed(1)} hrs` : value,
+                                            name === 'start' ? 'Start Time' : name
+                                        ]}
+                                        labelStyle={{ color: 'var(--primary)' }}
                                     />
-                                    <Bar dataKey="total" fill="var(--primary)" radius={[4, 4, 0, 0]} name="Tasks" />
+                                    <Bar dataKey="start" stackId="a" fill="transparent" />
+                                    <Bar dataKey="duration" stackId="a" name="Duration" radius={[0, 4, 4, 0]}>
+                                        {stats.chartData.map((entry, index) => (
+                                            <Cell
+                                                key={`cell-${index}`}
+                                                fill={entry.color}
+                                                opacity={entry.completed ? 0.3 : 1}
+                                                stroke={!entry.completed ? entry.color : 'none'}
+                                                strokeWidth={0.5}
+                                                strokeDasharray={!entry.completed ? "4 4" : "0"}
+                                            />
+                                        ))}
+                                    </Bar>
                                 </BarChart>
                             ) : (
                                 <LineChart data={stats.chartData}>
