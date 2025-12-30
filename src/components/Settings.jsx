@@ -18,17 +18,42 @@ const Settings = () => {
         setNewTag({ label: '', color: '#3b82f6' });
     };
 
+    // const COLORS = [
+    //     '#ef4444', // Red
+    //     '#f97316', // Orange
+    //     '#f59e0b', // Amber
+    //     '#10b981', // Emerald
+    //     '#06b6d4', // Cyan
+    //     '#3b82f6', // Blue
+    //     '#6366f1', // Indigo
+    //     '#8b5cf6', // Violet
+    //     '#ec4899', // Pink
+    //     '#64748b', // Slate
+    //     '#f59e0b', // Amber
+
+    // ];
     const COLORS = [
         '#ef4444', // Red
         '#f97316', // Orange
         '#f59e0b', // Amber
         '#10b981', // Emerald
-        '#06b6d4', // Cyan
+        '#028298ff', // Cyan
         '#3b82f6', // Blue
-        '#6366f1', // Indigo
+        '#0a0dd3ff', // Indigo
         '#8b5cf6', // Violet
         '#ec4899', // Pink
         '#64748b', // Slate
+        '#a7607cff', // Amber (duplicate)
+        '#14b8a6', // Teal
+        '#84cc16', // Lime
+        '#eab308', // Yellow
+        '#3f205bff', // Purple
+        '#f43f5e', // Rose
+        '#0ea5e9', // Sky
+        '#004b1bff', // Green
+        '#fb923c', // Orange (lighter)
+        '#d946ef', // Fuchsia
+        '#71717a', // Gray
     ];
 
     return (

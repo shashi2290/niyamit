@@ -14,7 +14,7 @@ import {
 const Dashboard = () => {
     const { tasks } = useTasks();
     const [currentDate, setCurrentDate] = useState(new Date());
-    const [viewMode, setViewMode] = useState('Month'); // 'Month', 'Week', 'Day'
+    const [viewMode, setViewMode] = useState('Week'); // 'Month', 'Week', 'Day'
 
     const today = startOfDay(new Date());
 
@@ -291,7 +291,7 @@ const Dashboard = () => {
                                         axisLine={false}
                                     />
                                     <RechartsTooltip
-                                        cursor={{ fill: 'var(--bg-tertiary)' }}
+                                        cursor={{ fill: 'var(--bg-secondary)' }}
                                         contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--glass-border)', color: 'white' }}
                                     />
                                     <Bar dataKey="total" fill="var(--primary)" radius={[4, 4, 0, 0]} name="Tasks" />
@@ -359,7 +359,7 @@ const Dashboard = () => {
                                         ))}
                                     </Pie>
                                     <RechartsTooltip
-                                        contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--glass-border)', borderRadius: '8px' }}
+                                        contentStyle={{ backgroundColor: 'var(--primary)', borderColor: 'var(--glass-border)', borderRadius: '8px' }}
                                     />
                                 </PieChart>
                             </ResponsiveContainer>

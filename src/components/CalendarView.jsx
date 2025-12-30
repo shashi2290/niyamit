@@ -336,7 +336,7 @@ const CalendarView = () => {
     const { tasks, tags, toggleTask, getTasksByDate, addTask, updateTask, deleteTask, addTag } = useTasks();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(new Date());
-    const [viewMode, setViewMode] = useState('Month'); // 'Month' or 'Day'
+    const [viewMode, setViewMode] = useState('Week'); // 'Month' or 'Day'
 
     // Task Input State - Initialize with current hour
     const getCurrentHourTime = () => {
