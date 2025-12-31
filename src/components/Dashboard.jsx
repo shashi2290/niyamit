@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
-    PieChart, Pie, Cell, BarChart, Bar
+    PieChart, Pie, Cell, BarChart, Bar, ComposedChart
 } from 'recharts';
 import { TrendingUp, AlertCircle, Award, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTasks } from '../contexts/TaskContext';
@@ -36,12 +36,19 @@ const Dashboard = () => {
     const stats = useMemo(() => {
         let chartData = [];
         let rangeStart, rangeEnd;
+        let rangeTasks = [];
 
         // 1. Prepare Chart Data based on View Mode
         if (viewMode === 'Month') {
             rangeStart = startOfMonth(currentDate);
             rangeEnd = endOfMonth(currentDate);
             const days = eachDayOfInterval({ start: rangeStart, end: rangeEnd });
+
+            // Calculate rangeTasks for analytics
+            rangeTasks = tasks.filter(t => {
+                const tDate = new Date(t.date);
+                return tDate >= rangeStart && tDate <= rangeEnd;
+            });
 
             chartData = days.map(date => {
                 const dayStr = format(date, 'yyyy-MM-dd');
@@ -53,13 +60,19 @@ const Dashboard = () => {
                     fullDate: date,
                     rate: total > 0 ? Math.round((completed / total) * 100) : 0,
                     total,
-                    completed
+                    completed,
+                    missed: total - completed
                 };
             });
         } else if (viewMode === 'Week') {
             rangeStart = startOfWeek(currentDate);
             rangeEnd = endOfWeek(currentDate);
             const days = eachDayOfInterval({ start: rangeStart, end: rangeEnd });
+
+            rangeTasks = tasks.filter(t => {
+                const tDate = new Date(t.date);
+                return tDate >= rangeStart && tDate <= rangeEnd;
+            });
 
             chartData = days.map(date => {
                 const dayStr = format(date, 'yyyy-MM-dd');
@@ -71,56 +84,45 @@ const Dashboard = () => {
                     fullDate: date,
                     rate: total > 0 ? Math.round((completed / total) * 100) : 0,
                     total,
-                    completed
+                    completed,
+                    missed: total - completed
                 };
             });
         } else if (viewMode === 'Day') {
             // Day View: Task Timeline
             const dayStr = format(currentDate, 'yyyy-MM-dd');
-            const dayTasks = tasks.filter(t => t.date === dayStr);
-
+            rangeTasks = tasks.filter(t => t.date === dayStr); // For pie/missed list
+            
             const parseTime = (timeStr) => {
                 if (!timeStr) return 0;
                 const [h, m] = timeStr.split(':').map(Number);
                 return h + (m / 60);
             };
 
-            chartData = dayTasks.map(t => {
+            chartData = rangeTasks.map(t => {
                 const start = parseTime(t.startTime);
                 const end = parseTime(t.endTime);
                 let duration = end - start;
-                // Handle crossing midnight simply (assuming single day view mostly)
+                // Handle crossing midnight simply
                 if (duration < 0) duration += 24;
 
                 return {
                     name: t.title,
-                    start: start, // Offset from 0
-                    duration: duration, // Length of bar
+                    start: start,
+                    duration: duration,
                     end: end,
                     completed: t.completed,
-                    color: t.category?.color || '#3b82f6', // Default to blue if no category
+                    color: t.category?.color || '#3b82f6',
                     fullTask: t,
-                    total: 1
+                    total: 1 // For consistent reducing later
                 };
             }).sort((a, b) => a.start - b.start);
         }
 
-        // 2. Category Breakdown (Pie) - Filtered by current view range
-        // For Pie chart, we want aggregates over the selected period
-        let rangeTasks = [];
-        if (viewMode === 'Day') {
-            rangeTasks = tasks.filter(t => t.date === format(currentDate, 'yyyy-MM-dd'));
-        } else {
-            // For Week/Month, check if date is within interval
-            rangeTasks = tasks.filter(t => {
-                const tDate = new Date(t.date);
-                return tDate >= rangeStart && tDate <= rangeEnd;
-            });
-        }
-
+        // 2. Category Breakdown (Pie) - Already have rangeTasks
         const categoryCounts = {};
         rangeTasks.forEach(t => {
-            if (!t.category) return; // Guard against missing category
+            if (!t.category) return;
             const cat = t.category.label;
             if (!categoryCounts[cat]) categoryCounts[cat] = 0;
             categoryCounts[cat]++;
@@ -128,24 +130,38 @@ const Dashboard = () => {
         const pieData = Object.keys(categoryCounts).map(key => ({
             name: key, value: categoryCounts[key]
         }));
-        if (pieData.length === 0) pieData.push({ name: 'No Data', value: 1 }); // Placeholder
+        if (pieData.length === 0) pieData.push({ name: 'No Data', value: 1 });
 
 
-        // 3. Most Missed Habits (Analysis) - Global
-        const pastTasks = tasks.filter(t => new Date(t.date) < today);
-        const missedCounts = {};
-        pastTasks.forEach(t => {
-            if (!t.completed) {
+        // 3. Attention Needed (Missed Tasks)
+        let missedList = [];
+        
+        const uncompletedInPeriod = rangeTasks.filter(t => {
+            const tDate = new Date(t.date);
+            // Ignore future tasks for "Missed" list
+            if (tDate > today) return false;
+            return !t.completed;
+        });
+
+        if (viewMode === 'Day') {
+            // List individual tasks
+            missedList = uncompletedInPeriod.map(t => ({
+                name: t.title,
+                count: 1 // Just for consistent API
+            }));
+        } else {
+            // Aggregate
+            const missedCounts = {};
+            uncompletedInPeriod.forEach(t => {
                 if (!missedCounts[t.title]) missedCounts[t.title] = 0;
                 missedCounts[t.title]++;
-            }
-        });
-        const missedList = Object.entries(missedCounts)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 5)
-            .map(([name, count]) => ({ name, count }));
-
-
+            });
+            missedList = Object.entries(missedCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5)
+                .map(([name, count]) => ({ name, count }));
+        }
+        
         // 4. Streak Calculation
         let streak = 0;
         const last30Days = Array.from({ length: 30 }, (_, i) => {
@@ -172,7 +188,6 @@ const Dashboard = () => {
         // 5. Today's Progress (Always for Today, strictly today in real-time)
         const todayStr = format(today, 'yyyy-MM-dd');
         const todayTasks = tasks.filter(t => t.date === todayStr);
-        console.log('Today Tasks:', todayTasks);
         const todayCompleted = todayTasks.filter(t => t.completed).length;
         const todayRate = todayTasks.length > 0 ? Math.round((todayCompleted / todayTasks.length) * 100) : 0;
 
@@ -249,7 +264,7 @@ const Dashboard = () => {
                 <div className="glass-panel">
                     <h3 className="text-muted font-bold mb-4">Attention Needed</h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                        {stats.missedList.slice(0, 2).map((item, idx) => (
+                        {stats.missedList.slice(0, 5).map((item, idx) => (
                             <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                 <AlertCircle size={18} style={{ color: 'var(--danger)' }} />
                                 <span className="text-sm">{item.name}</span>
@@ -264,7 +279,6 @@ const Dashboard = () => {
                     <h3 className="text-muted font-bold mb-4">Total Tasks in Period</h3>
                     <p className="text-2xl font-bold">
                         {stats.chartData.reduce((acc, curr) => acc + (curr.total || 0), 0)}
-                        {console.log(stats.chartData)}
                     </p>
                     <p className="text-xs text-muted mt-4">For selected {viewMode.toLowerCase()}</p>
                 </div>
@@ -333,7 +347,7 @@ const Dashboard = () => {
                                     </Bar>
                                 </BarChart>
                             ) : (
-                                <LineChart data={stats.chartData}>
+                                <ComposedChart data={stats.chartData}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="var(--bg-tertiary)" vertical={false} />
                                     <XAxis
                                         dataKey="dateLabel"
@@ -344,6 +358,16 @@ const Dashboard = () => {
                                         minTickGap={10}
                                     />
                                     <YAxis
+                                        yAxisId="left"
+                                        stroke="var(--text-muted)"
+                                        fontSize={12}
+                                        tickLine={false}
+                                        axisLine={false}
+                                        allowDecimals={false}
+                                    />
+                                    <YAxis
+                                        yAxisId="right"
+                                        orientation="right"
                                         stroke="var(--text-muted)"
                                         fontSize={12}
                                         tickLine={false}
@@ -353,17 +377,26 @@ const Dashboard = () => {
                                     <RechartsTooltip
                                         contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--glass-border)', color: 'white' }}
                                         itemStyle={{ color: 'var(--primary)' }}
+                                        formatter={(value, name) => {
+                                            if (name === 'completed') return [value, 'Completed'];
+                                            if (name === 'missed') return [value, 'Missed'];
+                                            if (name === 'rate') return [`${value}%`, 'Completion Rate'];
+                                            return [value, name];
+                                        }}
                                     />
+                                    <Bar dataKey="completed" stackId="a" fill="#10b981" yAxisId="left" name="completed" />
+                                    <Bar dataKey="missed" stackId="a" fill="#ef4444" yAxisId="left" name="missed" radius={[4, 4, 0, 0]} />
                                     <Line
+                                        yAxisId="right"
                                         type="monotone"
                                         dataKey="rate"
-                                        stroke="var(--primary)"
+                                        stroke="#8b5cf6"
                                         strokeWidth={3}
                                         dot={false}
-                                        activeDot={{ r: 6, fill: 'var(--primary)', stroke: 'white' }}
-                                        name="Completion Rate"
+                                        activeDot={{ r: 6, fill: '#8b5cf6', stroke: 'white' }}
+                                        name="rate"
                                     />
-                                </LineChart>
+                                </ComposedChart>
                             )}
 
                         </ResponsiveContainer>
