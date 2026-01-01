@@ -12,39 +12,75 @@ const Sidebar = () => {
     ];
 
     return (
-        <aside className="sidebar">
-            <div className="sidebar-header">
-                <h1 className="text-2xl font-bold gradient-text" style={{ paddingBottom: '0.5rem' }}>Niyamit</h1>
-                <p className="text-sm text-muted">Organize your life</p>
-            </div>
+      <aside className="sidebar">
+        <div className="sidebar-header">
+          <h1
+            className="text-2xl font-bold gradient-text"
+            style={{ paddingBottom: "0.5rem", display: "flex", alignItems: "center", gap: "10px" }}
+          >
+            <img
+              src="/vite.png"
+              alt="Niyamit Logo"
+              style={{
+                width: "90px",
+                height: "90px",
+                // marginLeft: "8px",
+                display: "inline-block",
+                verticalAlign: "middle",
+                borderRadius: "50%",
+              }}
+            />
+            Niyamit
+          </h1>
+          <p className="text-sm text-muted">Organize your life</p>
+        </div>
 
-            <nav className="sidebar-nav">
-                {navItems.map((item) => (
-                    <NavLink
-                        key={item.path}
-                        to={item.path}
-                        className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-                    >
-                        <item.icon size={20} />
-                        <span className="font-medium">{item.label}</span>
-                    </NavLink>
-                ))}
-            </nav>
+        <nav className="sidebar-nav">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              className={({ isActive }) =>
+                `nav-item ${isActive ? "active" : ""}`
+              }
+            >
+              <item.icon size={20} />
+              <span className="font-medium">{item.label}</span>
+            </NavLink>
+          ))}
+        </nav>
 
-            <div className="sidebar-footer">
-                <div className="user-profile" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <UserButton />
-                    <div style={{ overflow: 'hidden' }}>
-                        <p className="text-sm font-bold" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {user?.firstName || user?.username || 'User'}
-                        </p>
-                        <p className="text-xs text-muted" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {user?.primaryEmailAddress?.emailAddress}
-                        </p>
-                    </div>
-                </div>
+        <div className="sidebar-footer">
+          <div
+            className="user-profile"
+            style={{ display: "flex", alignItems: "center", gap: "10px" }}
+          >
+            <UserButton />
+            <div style={{ overflow: "hidden" }}>
+              <p
+                className="text-sm font-bold"
+                style={{
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {user?.firstName || user?.username || "User"}
+              </p>
+              <p
+                className="text-xs text-muted"
+                style={{
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {user?.primaryEmailAddress?.emailAddress}
+              </p>
             </div>
-        </aside>
+          </div>
+        </div>
+      </aside>
     );
 };
 

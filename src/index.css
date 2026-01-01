@@ -324,6 +324,8 @@ button {
   overflow-y: auto;
 }
 
+
+
 .task-input-wrapper {
   background-color: var(--bg-primary);
   border: 1px solid var(--bg-tertiary);
@@ -450,6 +452,29 @@ button {
   border-radius: var(--radius-lg);
   border: 1px solid var(--bg-tertiary);
   margin-top: 1rem;
+}
+
+.scrollbox {
+  overflow: auto;
+  height: 300px;
+  background: #111;
+  color: #eee;
+
+  scrollbar-width: thin;
+  scrollbar-color: #555 #222;
+}
+
+.scrollbox::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scrollbox::-webkit-scrollbar-track {
+  background: #222;
+}
+
+.scrollbox::-webkit-scrollbar-thumb {
+  background-color: #555;
+  border-radius: 8px;
 }
 
 .month-view-container {

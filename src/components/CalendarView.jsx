@@ -36,6 +36,32 @@ import { useTasks } from "../contexts/TaskContext";
 // Helper to get task ID (works with both MongoDB _id and fallback id)
 const getTaskId = (task) => task._id || task.id;
 
+// Helper to check if task is editable
+const isTaskEditable = (task) => {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    
+    const taskDate = parse(task.date, 'yyyy-MM-dd', new Date());
+    taskDate.setHours(0,0,0,0);
+
+    // 1. Previous days strict lock
+    if (taskDate < today) return false;
+
+    // 2. Today's tasks: 3 hour window after end time
+    if (isSameDay(taskDate, today) && task.endTime) {
+        const now = new Date();
+        const [h, m] = task.endTime.split(':').map(Number);
+        const endTimeDate = new Date(today);
+        endTimeDate.setHours(h, m, 0, 0);
+        
+        // Window is 3 hours
+        const lockTime = new Date(endTimeDate.getTime() + 3 * 60 * 60 * 1000);
+        if (now > lockTime) return false;
+    }
+    
+    return true;
+};
+
 // Helper to get pixels from "HH:MM"
 const getTopHeight = (startTime, endTime, PIXELS_PER_HOUR = 60) => {
   if (!startTime || !endTime) return { top: 0, height: 60 };
@@ -79,7 +105,7 @@ const DayTimeGridView = ({
   const nowTop = (nowMinutes / 60) * PIXELS_PER_HOUR;
 
   return (
-    <div className="time-grid-container" ref={scrollRef}>
+    <div className="time-grid-container scrollbox" ref={scrollRef}>
       <div className="time-column">
         {hours.map((hour) => (
           <div key={hour} className="time-label">
@@ -122,6 +148,7 @@ const DayTimeGridView = ({
 
         {currentTasks.map((task) => {
           const { top, height } = getTopHeight(task.startTime, task.endTime);
+          const editable = isTaskEditable(task);
           return (
             <div
               key={getTaskId(task)}
@@ -134,9 +161,9 @@ const DayTimeGridView = ({
                   : task.category.color + "33",
                 borderLeft: `4px solid ${task.category.color}`,
                 opacity: task.completed ? 0.6 : 1,
-                cursor: "grab",
+                cursor: editable ? "grab" : "default",
               }}
-              draggable={true}
+              draggable={editable}
               onDragStart={(e) => handleDragStart(e, task)}
               onDragEnd={handleDragEnd}
               onClick={(e) => {
@@ -205,7 +232,7 @@ const WeekGridView = ({
 
   return (
     <div
-      className="time-grid-container"
+      className="time-grid-container scrollbox"
       style={{ overflowX: "auto", overflowY: "auto" }}
       ref={scrollRef}
     >
@@ -395,6 +422,7 @@ const WeekGridView = ({
                     task.startTime,
                     task.endTime
                   );
+                  const editable = isTaskEditable(task);
                   return (
                     <div
                       key={getTaskId(task)}
@@ -412,9 +440,9 @@ const WeekGridView = ({
                         left: "2px",
                         right: "2px",
                         width: "auto",
-                        cursor: "grab",
+                        cursor: editable ? "grab" : "default",
                       }}
-                      draggable={true}
+                      draggable={editable}
                       onDragStart={(e) => handleDragStart(e, task)}
                       onDragEnd={handleDragEnd}
                       onClick={(e) => {
@@ -568,6 +596,11 @@ const CalendarView = () => {
 
   // Prepare Edit
   const handleEditClick = (task) => {
+    if (!isTaskEditable(task)) {
+        alert("This task is locked and cannot be edited.");
+        return;
+    }
+
     setEditingTaskId(getTaskId(task));
     setNewTaskTitle(task.title);
     setNewStartTime(task.startTime || "09:00");
@@ -641,6 +674,12 @@ const CalendarView = () => {
   };
 
   const handleDeleteTask = (taskId) => {
+    const task = tasks.find(t => getTaskId(t) === taskId);
+    if (task && !isTaskEditable(task)) {
+        alert("This task is locked and cannot be deleted.");
+        return;
+    }
+
     if (window.confirm("Are you sure you want to delete this task?")) {
       deleteTask(taskId);
       if (editingTaskId === taskId) {
@@ -664,6 +703,11 @@ const CalendarView = () => {
   };
 
   const handleToggleTask = (task) => {
+    if (!isTaskEditable(task)) {
+        alert("This task is locked and cannot be updated.");
+        return;
+    }
+
     const taskId = getTaskId(task);
     const wasCompleted = task.completed;
 
@@ -767,6 +811,10 @@ const CalendarView = () => {
   // --- Drag and Drop Handlers ---
 
   const handleDragStart = (e, task) => {
+    if (!isTaskEditable(task)) {
+        e.preventDefault();
+        return;
+    }
     e.dataTransfer.setData("taskId", getTaskId(task));
     e.dataTransfer.effectAllowed = "move";
 
@@ -790,6 +838,15 @@ const CalendarView = () => {
 
     const task = tasks.find((t) => getTaskId(t) === taskId);
     if (!task) return;
+
+    // Additional check for drop target, though mostly redundant if start was blocked
+    const targetDateObj = new Date(targetDate);
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    if (targetDateObj < today) {
+        alert("Cannot move task to a past date.");
+        return;
+    }
 
     // Calculate Y position relative to the container
     const rect = e.currentTarget.getBoundingClientRect();
@@ -1192,25 +1249,21 @@ const CalendarView = () => {
                 </button>
               </div>
             )}
-              <button
-                onClick={handleSaveTask}
-                className=""
-                style={{
-                  marginLeft: "auto",
-                  background: editingTaskId
-                    ? "var(--primary)"
-                    : "var(--primary)",
-                  color: editingTaskId
-                    ? "white"
-                    : "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  padding: "2px 8px",
-                  fontSize: "0.75rem",
-                }}
-              >
-                {editingTaskId ? "Update" : "Add"}
-              </button>
+            <button
+              onClick={handleSaveTask}
+              className=""
+              style={{
+                marginLeft: "auto",
+                background: editingTaskId ? "var(--primary)" : "var(--primary)",
+                color: editingTaskId ? "white" : "white",
+                border: "none",
+                borderRadius: "4px",
+                padding: "2px 8px",
+                fontSize: "0.75rem",
+              }}
+            >
+              {editingTaskId ? "Update" : "Add"}
+            </button>
           </div>
         </div>
 
@@ -1222,6 +1275,7 @@ const CalendarView = () => {
             flexDirection: "column",
             gap: "0.75rem",
           }}
+          className="scrollbox"
         >
           {selectedDateTasks.length > 0 ? (
             selectedDateTasks.map((task) => (

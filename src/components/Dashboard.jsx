@@ -146,9 +146,26 @@ const Dashboard = () => {
         let missedList = [];
         
         const uncompletedInPeriod = rangeTasks.filter(t => {
-            const tDate = new Date(t.date);
+            const tDate = parse(t.date, 'yyyy-MM-dd', new Date());
+            tDate.setHours(0, 0, 0, 0);
+            
             // Ignore future tasks for "Missed" list
             if (tDate > today) return false;
+
+            if (isSameDay(tDate, today)) {
+                if (t.completed) return false;
+                if (!t.endTime) return false; // Tasks without time are not missed until day ends? Or treat as never missed today.
+
+                const now = new Date();
+                const [h, m] = t.endTime.split(':').map(Number);
+                const taskEnd = new Date(today);
+                taskEnd.setHours(h, m, 0, 0);
+                
+                // Missed if 3 hours passed since end time
+                const missThreshold = new Date(taskEnd.getTime() + 3 * 60 * 60 * 1000);
+                return now > missThreshold;
+            }
+
             return !t.completed;
         });
 
