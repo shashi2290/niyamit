@@ -24,6 +24,11 @@ const taskSchema = new mongoose.Schema({
         type: String,
         enum: ['task', 'habit'],
         default: 'task'
+    },
+    userId: {
+        type: String,
+        required: true,
+        index: true
     }
 }, {
     timestamps: true

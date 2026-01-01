@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
+
     PieChart, Pie, Cell, BarChart, Bar, ComposedChart
 } from 'recharts';
 import { TrendingUp, AlertCircle, Award, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -120,17 +121,25 @@ const Dashboard = () => {
         }
 
         // 2. Category Breakdown (Pie) - Already have rangeTasks
-        const categoryCounts = {};
+        const categoryStats = {};
         rangeTasks.forEach(t => {
             if (!t.category) return;
-            const cat = t.category.label;
-            if (!categoryCounts[cat]) categoryCounts[cat] = 0;
-            categoryCounts[cat]++;
+            const catLabel = t.category.label;
+            const catColor = t.category.color;
+            
+            if (!categoryStats[catLabel]) {
+                categoryStats[catLabel] = { count: 0, color: catColor };
+            }
+            categoryStats[catLabel].count++;
         });
-        const pieData = Object.keys(categoryCounts).map(key => ({
-            name: key, value: categoryCounts[key]
+        
+        const pieData = Object.keys(categoryStats).map(key => ({
+            name: key, 
+            value: categoryStats[key].count,
+            color: categoryStats[key].color || '#3b82f6'
         }));
-        if (pieData.length === 0) pieData.push({ name: 'No Data', value: 1 });
+        
+        if (pieData.length === 0) pieData.push({ name: 'No Data', value: 1, color: '#e5e7eb' });
 
 
         // 3. Attention Needed (Missed Tasks)
@@ -161,7 +170,7 @@ const Dashboard = () => {
                 .slice(0, 5)
                 .map(([name, count]) => ({ name, count }));
         }
-        
+
         // 4. Streak Calculation
         let streak = 0;
         const last30Days = Array.from({ length: 30 }, (_, i) => {
@@ -200,8 +209,6 @@ const Dashboard = () => {
             todayTotal: todayTasks.length
         };
     }, [tasks, currentDate, viewMode, today]);
-
-    const COLORS = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ec4899', '#e5e7eb'];
 
     const getTitle = () => {
         if (viewMode === 'Month') return format(currentDate, 'MMMM yyyy');
@@ -424,7 +431,7 @@ const Dashboard = () => {
                                         dataKey="value"
                                     >
                                         {stats.pieData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                            <Cell key={`cell-${index}`} fill={entry.color} />
                                         ))}
                                     </Pie>
                                     <RechartsTooltip
@@ -438,7 +445,7 @@ const Dashboard = () => {
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'center', marginTop: '1rem' }}>
                             {stats.pieData.map((entry, index) => (
                                 <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                                    <div style={{ width: '0.5rem', height: '0.5rem', borderRadius: '50%', backgroundColor: COLORS[index % COLORS.length] }}></div>
+                                    <div style={{ width: '0.5rem', height: '0.5rem', borderRadius: '50%', backgroundColor: entry.color }}></div>
                                     <span className="text-xs text-muted">{entry.name}</span>
                                 </div>
                             ))}

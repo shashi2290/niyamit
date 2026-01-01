@@ -1,12 +1,13 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from '@clerk/clerk-react';
 import { taskAPI, tagAPI } from '../services/api';
-import { CATEGORIES } from '../data/mockData';
 
 const TaskContext = createContext();
 
 export const useTasks = () => useContext(TaskContext);
 
 export const TaskProvider = ({ children }) => {
+    const { getToken, isLoaded, isSignedIn } = useAuth();
     const [tasks, setTasks] = useState([]);
     const [tags, setTags] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -15,45 +16,39 @@ export const TaskProvider = ({ children }) => {
     // Load initial data from MongoDB
     useEffect(() => {
         const loadData = async () => {
+            if (!isLoaded || !isSignedIn) {
+                setLoading(false);
+                return;
+            }
+
             try {
                 setLoading(true);
+                const token = await getToken();
+
+                // Fetch tasks (triggers seeding for new users if needed)
+                const fetchedTasks = await taskAPI.getAll(token);
+                setTasks(fetchedTasks);
 
                 // Fetch tags
-                const fetchedTags = await tagAPI.getAll();
-
-                // If no tags exist, initialize with default categories
-                if (fetchedTags.length === 0) {
-                    const defaultTags = Object.values(CATEGORIES);
-                    const createdTags = await Promise.all(
-                        defaultTags.map(tag => tagAPI.create(tag))
-                    );
-                    setTags(createdTags);
-                } else {
-                    setTags(fetchedTags);
-                }
-
-                // Fetch tasks
-                const fetchedTasks = await taskAPI.getAll();
-                setTasks(fetchedTasks);
+                const fetchedTags = await tagAPI.getAll(token);
+                setTags(fetchedTags);
 
                 setError(null);
             } catch (err) {
                 console.error('Error loading data:', err);
                 setError(err.message);
-                // Fallback to empty arrays if server is not available
-                setTags(Object.values(CATEGORIES));
-                setTasks([]);
             } finally {
                 setLoading(false);
             }
         };
 
         loadData();
-    }, []);
+    }, [isLoaded, isSignedIn, getToken]);
 
     const toggleTask = async (taskId) => {
         try {
-            const updatedTask = await taskAPI.toggle(taskId);
+            const token = await getToken();
+            const updatedTask = await taskAPI.toggle(token, taskId);
             setTasks(prev => prev.map(t =>
                 (t._id || t.id) === taskId ? updatedTask : t
             ));
@@ -65,7 +60,8 @@ export const TaskProvider = ({ children }) => {
 
     const addTask = async (task) => {
         try {
-            const newTask = await taskAPI.create(task);
+            const token = await getToken();
+            const newTask = await taskAPI.create(token, task);
             setTasks(prev => [...prev, newTask]);
         } catch (err) {
             console.error('Error adding task:', err);
@@ -75,8 +71,9 @@ export const TaskProvider = ({ children }) => {
 
     const updateTask = async (updatedTask) => {
         try {
+            const token = await getToken();
             const taskId = updatedTask._id || updatedTask.id;
-            const task = await taskAPI.update(taskId, updatedTask);
+            const task = await taskAPI.update(token, taskId, updatedTask);
             setTasks(prev => prev.map(t => ((t._id || t.id) === taskId ? task : t)));
         } catch (err) {
             console.error('Error updating task:', err);
@@ -86,7 +83,8 @@ export const TaskProvider = ({ children }) => {
 
     const deleteTask = async (taskId) => {
         try {
-            await taskAPI.delete(taskId);
+            const token = await getToken();
+            await taskAPI.delete(token, taskId);
             setTasks(prev => prev.filter(t => (t._id || t.id) !== taskId));
         } catch (err) {
             console.error('Error deleting task:', err);
@@ -96,7 +94,8 @@ export const TaskProvider = ({ children }) => {
 
     const addTag = async (tag) => {
         try {
-            const newTag = await tagAPI.create(tag);
+            const token = await getToken();
+            const newTag = await tagAPI.create(token, tag);
             setTags(prev => [...prev, newTag]);
         } catch (err) {
             console.error('Error adding tag:', err);
@@ -104,9 +103,21 @@ export const TaskProvider = ({ children }) => {
         }
     };
 
+    const updateTag = async (updatedTag) => {
+        try {
+            const token = await getToken();
+            const tag = await tagAPI.update(token, updatedTag.id, updatedTag);
+            setTags(prev => prev.map(t => (t.id === updatedTag.id ? tag : t)));
+        } catch (err) {
+            console.error('Error updating tag:', err);
+            setError(err.message);
+        }
+    };
+
     const deleteTag = async (tagId) => {
         try {
-            await tagAPI.delete(tagId);
+            const token = await getToken();
+            await tagAPI.delete(token, tagId);
             setTags(prev => prev.filter(t => t.id !== tagId));
         } catch (err) {
             console.error('Error deleting tag:', err);
@@ -122,7 +133,7 @@ export const TaskProvider = ({ children }) => {
         return tasks;
     };
 
-    if (loading) {
+    if (!isLoaded) {
         return (
             <div style={{
                 display: 'flex',
@@ -131,7 +142,7 @@ export const TaskProvider = ({ children }) => {
                 height: '100vh',
                 color: 'var(--text-primary)'
             }}>
-                <div>Loading...</div>
+                <div>Loading authentication...</div>
             </div>
         );
     }
@@ -147,6 +158,7 @@ export const TaskProvider = ({ children }) => {
             updateTask,
             deleteTask,
             addTag,
+            updateTag,
             deleteTag,
             getTasksByDate,
             getStats

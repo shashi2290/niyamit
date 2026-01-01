@@ -1,7 +1,9 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { LayoutDashboard, Calendar, CheckSquare, Settings, Activity } from 'lucide-react';
+import { UserButton, useUser } from '@clerk/clerk-react';
 
 const Sidebar = () => {
+    const { user } = useUser();
     const navItems = [
         { icon: Activity, label: 'Analytics', path: '/' }, // Dashboard as home
         { icon: Calendar, label: 'Schedule', path: '/calendar' },
@@ -30,11 +32,15 @@ const Sidebar = () => {
             </nav>
 
             <div className="sidebar-footer">
-                <div className="user-profile">
-                    <div className="avatar-circle"></div>
-                    <div>
-                        <p className="text-sm font-bold">User</p>
-                        <p className="text-xs text-muted">Free Plan</p>
+                <div className="user-profile" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <UserButton />
+                    <div style={{ overflow: 'hidden' }}>
+                        <p className="text-sm font-bold" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {user?.firstName || user?.username || 'User'}
+                        </p>
+                        <p className="text-xs text-muted" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {user?.primaryEmailAddress?.emailAddress}
+                        </p>
                     </div>
                 </div>
             </div>
