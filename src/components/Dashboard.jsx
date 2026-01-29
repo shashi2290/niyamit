@@ -179,13 +179,15 @@ const Dashboard = () => {
             // Aggregate
             const missedCounts = {};
             uncompletedInPeriod.forEach(t => {
-                if (!missedCounts[t.title]) missedCounts[t.title] = 0;
-                missedCounts[t.title]++;
+                const label = t.category?.label || t.title;
+                if (!missedCounts[t.category?.label])
+                  missedCounts[t.category?.label] = 0;
+                missedCounts[t.category?.label]++;
             });
             missedList = Object.entries(missedCounts)
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 5)
-                .map(([name, count]) => ({ name, count }));
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, 5)
+              .map(([name, count]) => ({ name, count }));
         }
 
         // 4. Streak Calculation
@@ -234,243 +236,377 @@ const Dashboard = () => {
     };
 
     return (
-        <div className="page-container">
-            <header className="page-header">
-                <div>
-                    <h1 className="text-3xl font-bold gradient-text">
-                        Dashboard
-                    </h1>
-                    <p className="text-muted">Analytics for {getTitle()}</p>
-                </div>
+      <div className="page-container">
+        <header className="page-header">
+          <div>
+            <h1 className="text-3xl font-bold gradient-text">Dashboard</h1>
+            <p className="text-muted">Analytics for {getTitle()}</p>
+          </div>
 
-                <div className="flex gap-4 items-center" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                    <div className="calendar-controls" style={{ marginRight: '1rem' }}>
-                        <button onClick={prevPeriod} className="btn-icon"><ChevronLeft /></button>
-                        <button onClick={jumpToToday} className="btn-sm">Today</button>
-                        <button onClick={nextPeriod} className="btn-icon"><ChevronRight /></button>
-                    </div>
-
-                    <select
-                        className="view-select"
-                        value={viewMode}
-                        onChange={(e) => setViewMode(e.target.value)}
-                    >
-                        <option value="Month">Month View</option>
-                        <option value="Week">Week View</option>
-                        <option value="Day">Day View</option>
-                    </select>
-
-                    <div className="text-right" style={{ borderLeft: '1px solid var(--bg-tertiary)', paddingLeft: '1rem' }}>
-                        <p className="text-sm text-muted">Current Streak</p>
-                        <div className="streak-badge">
-                            <Award size={24} /> {stats.streak} Days
-                        </div>
-                    </div>
-                </div>
-            </header>
-
-            {/* Top Stats Cards */}
-            <div className="stats-grid">
-                <div className="glass-panel" style={{ position: 'relative', overflow: 'hidden' }}>
-                    <div style={{ position: 'absolute', right: 0, top: 0, padding: '1rem', opacity: 0.1 }}>
-                        <CheckCircle2 size={100} />
-                    </div>
-                    <h3 className="text-muted font-bold mb-4">Today's Focus</h3>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-                        <span className="text-2xl font-bold">{stats.todayRate}%</span>
-                        <span className="text-sm text-muted">Completed</span>
-                    </div>
-                    <div className="progress-bar-bg">
-                        <div className="progress-bar-fill" style={{ width: `${stats.todayRate}%` }}></div>
-                    </div>
-                </div>
-
-                <div className="glass-panel">
-                    <h3 className="text-muted font-bold mb-4">Attention Needed</h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                        {stats.missedList.slice(0, 5).map((item, idx) => (
-                            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                <AlertCircle size={18} style={{ color: 'var(--danger)' }} />
-                                <span className="text-sm">{item.name}</span>
-                                <span className="badge" style={{ marginLeft: 'auto', background: 'var(--bg-tertiary)' }}>{item.count} missed</span>
-                            </div>
-                        ))}
-                        {stats.missedList.length === 0 && <p className="text-sm" style={{ color: 'var(--success)' }}>No missed tasks recently!</p>}
-                    </div>
-                </div>
-
-                <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    <h3 className="text-muted font-bold mb-4">Total Tasks in Period</h3>
-                    <p className="text-2xl font-bold">
-                        {stats.chartData.reduce((acc, curr) => acc + (curr.total || 0), 0)}
-                    </p>
-                    <p className="text-xs text-muted mt-4">For selected {viewMode.toLowerCase()}</p>
-                </div>
+          <div
+            className="flex gap-4 items-center"
+            style={{ display: "flex", gap: "1rem", alignItems: "center" }}
+          >
+            <div className="calendar-controls" style={{ marginRight: "1rem" }}>
+              <button onClick={prevPeriod} className="btn-icon">
+                <ChevronLeft />
+              </button>
+              <button onClick={jumpToToday} className="btn-sm">
+                Today
+              </button>
+              <button onClick={nextPeriod} className="btn-icon">
+                <ChevronRight />
+              </button>
             </div>
 
-            {/* Charts Grid */}
-            <div className="charts-grid">
-                {/* Main Chart */}
-                <div className="glass-panel">
-                    <h3 className="text-lg font-bold mb-4">
-                        {viewMode === 'Day' ? 'Hourly Activity' : 'Completion Consistency'}
-                    </h3>
-                    <div style={{ height: '500px', width: '100%' }}>
-                        <ResponsiveContainer width="100%" height="100%">
-                            {viewMode === 'Day' ? (
-                                <BarChart
-                                    layout="vertical"
-                                    data={stats.chartData}
-                                    margin={{ top: 20, right: 30, left: 40, bottom: 5 }}
-                                >
-                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--bg-tertiary)" />
-                                    <XAxis
-                                        type="number"
-                                        domain={[0, 24]}
-                                        ticks={[0, 4, 8, 12, 16, 20, 24]}
-                                        tickFormatter={(tick) => {
-                                            if (tick === 0 || tick === 24) return '12 AM';
-                                            if (tick === 12) return '12 PM';
-                                            return tick > 12 ? `${tick - 12} PM` : `${tick} AM`;
-                                        }}
-                                        stroke="var(--text-muted)"
-                                        fontSize={12}
-                                        tickLine={false}
-                                        axisLine={false}
-                                    />
-                                    <YAxis
-                                        type="category"
-                                        dataKey="name"
-                                        width={100}
-                                        stroke="var(--text-muted)"
-                                        fontSize={12}
-                                        tickLine={false}
-                                        axisLine={false}
-                                    />
-                                    <RechartsTooltip
-                                        cursor={{ fill: 'var(--bg-secondary)' }}
-                                        contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--glass-border)', color: 'white' }}
-                                        formatter={(value, name) => [
-                                            name === 'duration' ? `${value.toFixed(1)} hrs` : value,
-                                            name === 'start' ? 'Start Time' : name
-                                        ]}
-                                        labelStyle={{ color: 'var(--primary)' }}
-                                    />
-                                    <Bar dataKey="start" stackId="a" fill="transparent" />
-                                    <Bar dataKey="duration" stackId="a" name="Duration" radius={[0, 4, 4, 0]}>
-                                        {stats.chartData.map((entry, index) => (
-                                            <Cell
-                                                key={`cell-${index}`}
-                                                fill={entry.color}
-                                                opacity={entry.completed ? 0.3 : 1}
-                                                stroke={!entry.completed ? entry.color : 'none'}
-                                                strokeWidth={0.5}
-                                                strokeDasharray={!entry.completed ? "4 4" : "0"}
-                                            />
-                                        ))}
-                                    </Bar>
-                                </BarChart>
-                            ) : (
-                                <ComposedChart data={stats.chartData}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="var(--bg-tertiary)" vertical={false} />
-                                    <XAxis
-                                        dataKey="dateLabel"
-                                        stroke="var(--text-muted)"
-                                        fontSize={12}
-                                        tickLine={false}
-                                        axisLine={false}
-                                        minTickGap={10}
-                                    />
-                                    <YAxis
-                                        yAxisId="left"
-                                        stroke="var(--text-muted)"
-                                        fontSize={12}
-                                        tickLine={false}
-                                        axisLine={false}
-                                        allowDecimals={false}
-                                    />
-                                    <YAxis
-                                        yAxisId="right"
-                                        orientation="right"
-                                        stroke="var(--text-muted)"
-                                        fontSize={12}
-                                        tickLine={false}
-                                        axisLine={false}
-                                        unit="%"
-                                    />
-                                    <RechartsTooltip
-                                        contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--glass-border)', color: 'white' }}
-                                        itemStyle={{ color: 'var(--primary)' }}
-                                        formatter={(value, name) => {
-                                            if (name === 'completed') return [value, 'Completed'];
-                                            if (name === 'missed') return [value, 'Missed'];
-                                            if (name === 'rate') return [`${value}%`, 'Completion Rate'];
-                                            return [value, name];
-                                        }}
-                                    />
-                                    <Bar dataKey="completed" stackId="a" fill="#10b981" yAxisId="left" name="completed" />
-                                    <Bar dataKey="missed" stackId="a" fill="#ef4444" yAxisId="left" name="missed" radius={[4, 4, 0, 0]} />
-                                    <Line
-                                        yAxisId="right"
-                                        type="monotone"
-                                        dataKey="rate"
-                                        stroke="#8b5cf6"
-                                        strokeWidth={3}
-                                        dot={false}
-                                        activeDot={{ r: 6, fill: '#8b5cf6', stroke: 'white' }}
-                                        name="rate"
-                                    />
-                                </ComposedChart>
-                            )}
+            <select
+              className="view-select"
+              value={viewMode}
+              onChange={(e) => setViewMode(e.target.value)}
+            >
+              <option value="Month">Month View</option>
+              <option value="Week">Week View</option>
+              <option value="Day">Day View</option>
+            </select>
 
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                {/* Pie Chart */}
-                <div className="glass-panel">
-                    <h3 className="text-lg font-bold mb-4">Focus Areas ({viewMode})</h3>
-                    <div style={{ height: '300px', width: '100%' }}>
-                        {stats.pieData[0]?.name === 'No Data' ? (
-                            <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
-                                No tasks in this period
-                            </div>
-                        ) : (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={stats.pieData}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={60}
-                                        outerRadius={80}
-                                        paddingAngle={5}
-                                        dataKey="value"
-                                    >
-                                        {stats.pieData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.color} />
-                                        ))}
-                                    </Pie>
-                                    <RechartsTooltip
-                                        contentStyle={{ backgroundColor: 'var(--primary)', borderColor: 'var(--glass-border)', borderRadius: '8px' }}
-                                    />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        )}
-                    </div>
-                    {stats.pieData[0]?.name !== 'No Data' && (
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'center', marginTop: '1rem' }}>
-                            {stats.pieData.map((entry, index) => (
-                                <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                                    <div style={{ width: '0.5rem', height: '0.5rem', borderRadius: '50%', backgroundColor: entry.color }}></div>
-                                    <span className="text-xs text-muted">{entry.name}</span>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
+            <div
+              className="text-right"
+              style={{
+                borderLeft: "1px solid var(--bg-tertiary)",
+                paddingLeft: "1rem",
+              }}
+            >
+              <p className="text-sm text-muted">Current Streak</p>
+              <div className="streak-badge">
+                <Award size={24} /> {stats.streak} Days
+              </div>
             </div>
+          </div>
+        </header>
+
+        {/* Top Stats Cards */}
+        <div className="stats-grid">
+          <div
+            className="glass-panel"
+            style={{ position: "relative", overflow: "hidden" }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                right: 0,
+                top: 0,
+                padding: "1rem",
+                opacity: 0.1,
+              }}
+            >
+              <CheckCircle2 size={100} />
+            </div>
+            <h3 className="text-muted font-bold mb-4">Today's Focus</h3>
+            <div
+              style={{ display: "flex", alignItems: "baseline", gap: "0.5rem" }}
+            >
+              <span className="text-2xl font-bold">{stats.todayRate}%</span>
+              <span className="text-sm text-muted">Completed</span>
+            </div>
+            <div className="progress-bar-bg">
+              <div
+                className="progress-bar-fill"
+                style={{ width: `${stats.todayRate}%` }}
+              ></div>
+            </div>
+          </div>
+          <div className="glass-panel">
+            <h3 className="text-muted font-bold mb-4">Attention Needed</h3>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.75rem",
+              }}
+            >
+              {stats.missedList.slice(0, 5).map((item, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.75rem",
+                  }}
+                >
+                  <AlertCircle size={18} style={{ color: "var(--danger)" }} />
+                  <span className="text-sm">{item.name}</span>
+                  <span
+                    className="badge"
+                    style={{
+                      marginLeft: "auto",
+                      background: "var(--bg-tertiary)",
+                    }}
+                  >
+                    {item.count} missed
+                  </span>
+                </div>
+              ))}
+              {stats.missedList.length === 0 && (
+                <p className="text-sm" style={{ color: "var(--success)" }}>
+                  No missed tasks recently!
+                </p>
+              )}
+            </div>
+          </div>
+          <div
+            className="glass-panel"
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+            }}
+          >
+            <h3 className="text-muted font-bold mb-4">Total Tasks in Period</h3>
+            <p className="text-2xl font-bold">
+              {stats.chartData.reduce(
+                (acc, curr) => acc + (curr.total || 0),
+                0,
+              )}
+            </p>
+            <p className="text-xs text-muted mt-4">
+              For selected {viewMode.toLowerCase()}
+            </p>
+          </div>
         </div>
+
+        {/* Charts Grid */}
+        <div className="charts-grid">
+          {/* Main Chart */}
+          <div className="glass-panel">
+            <h3 className="text-lg font-bold mb-4">
+              {viewMode === "Day"
+                ? "Hourly Activity"
+                : "Completion Consistency"}
+            </h3>
+            <div style={{ height: "500px", width: "100%" }}>
+              <ResponsiveContainer width="100%" height="100%">
+                {viewMode === "Day" ? (
+                  <BarChart
+                    layout="vertical"
+                    data={stats.chartData}
+                    margin={{ top: 20, right: 30, left: 40, bottom: 5 }}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      horizontal={false}
+                      stroke="var(--bg-tertiary)"
+                    />
+                    <XAxis
+                      type="number"
+                      domain={[0, 24]}
+                      ticks={[0, 4, 8, 12, 16, 20, 24]}
+                      tickFormatter={(tick) => {
+                        if (tick === 0 || tick === 24) return "12 AM";
+                        if (tick === 12) return "12 PM";
+                        return tick > 12 ? `${tick - 12} PM` : `${tick} AM`;
+                      }}
+                      stroke="var(--text-muted)"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      type="category"
+                      dataKey="name"
+                      width={100}
+                      stroke="var(--text-muted)"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <RechartsTooltip
+                      cursor={{ fill: "var(--bg-secondary)" }}
+                      contentStyle={{
+                        backgroundColor: "var(--bg-secondary)",
+                        borderColor: "var(--glass-border)",
+                        color: "white",
+                      }}
+                      formatter={(value, name) => [
+                        name === "duration" ? `${value.toFixed(1)} hrs` : value,
+                        name === "start" ? "Start Time" : name,
+                      ]}
+                      labelStyle={{ color: "var(--primary)" }}
+                    />
+                    <Bar dataKey="start" stackId="a" fill="transparent" />
+                    <Bar
+                      dataKey="duration"
+                      stackId="a"
+                      name="Duration"
+                      radius={[0, 4, 4, 0]}
+                    >
+                      {stats.chartData.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={entry.color}
+                          opacity={entry.completed ? 0.3 : 1}
+                          stroke={!entry.completed ? entry.color : "none"}
+                          strokeWidth={0.5}
+                          strokeDasharray={!entry.completed ? "4 4" : "0"}
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                ) : (
+                  <ComposedChart data={stats.chartData}>
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="var(--bg-tertiary)"
+                      vertical={false}
+                    />
+                    <XAxis
+                      dataKey="dateLabel"
+                      stroke="var(--text-muted)"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                      minTickGap={10}
+                    />
+                    <YAxis
+                      yAxisId="left"
+                      stroke="var(--text-muted)"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                      allowDecimals={false}
+                    />
+                    <YAxis
+                      yAxisId="right"
+                      orientation="right"
+                      stroke="var(--text-muted)"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                      unit="%"
+                    />
+                    <RechartsTooltip
+                      contentStyle={{
+                        backgroundColor: "var(--bg-secondary)",
+                        borderColor: "var(--glass-border)",
+                        color: "white",
+                      }}
+                      itemStyle={{ color: "var(--primary)" }}
+                      formatter={(value, name) => {
+                        if (name === "completed") return [value, "Completed"];
+                        if (name === "missed") return [value, "Missed"];
+                        if (name === "rate")
+                          return [`${value}%`, "Completion Rate"];
+                        return [value, name];
+                      }}
+                    />
+                    <Bar
+                      dataKey="completed"
+                      stackId="a"
+                      fill="#10b981"
+                      yAxisId="left"
+                      name="completed"
+                    />
+                    <Bar
+                      dataKey="missed"
+                      stackId="a"
+                      fill="#ef4444"
+                      yAxisId="left"
+                      name="missed"
+                      radius={[4, 4, 0, 0]}
+                    />
+                    <Line
+                      yAxisId="right"
+                      type="monotone"
+                      dataKey="rate"
+                      stroke="#8b5cf6"
+                      strokeWidth={3}
+                      dot={false}
+                      activeDot={{ r: 6, fill: "#8b5cf6", stroke: "white" }}
+                      name="rate"
+                    />
+                  </ComposedChart>
+                )}
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Pie Chart */}
+          <div className="glass-panel">
+            <h3 className="text-lg font-bold mb-4">Focus Areas ({viewMode})</h3>
+            <div style={{ height: "300px", width: "100%" }}>
+              {stats.pieData[0]?.name === "No Data" ? (
+                <div
+                  style={{
+                    height: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  No tasks in this period
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={stats.pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {stats.pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip
+                      contentStyle={{
+                        backgroundColor: "var(--primary)",
+                        borderColor: "var(--glass-border)",
+                        borderRadius: "8px",
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+            {stats.pieData[0]?.name !== "No Data" && (
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "0.5rem",
+                  justifyContent: "center",
+                  marginTop: "1rem",
+                }}
+              >
+                {stats.pieData.map((entry, index) => (
+                  <div
+                    key={index}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.375rem",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "0.5rem",
+                        height: "0.5rem",
+                        borderRadius: "50%",
+                        backgroundColor: entry.color,
+                      }}
+                    ></div>
+                    <span className="text-xs text-muted">{entry.name}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     );
 };
 

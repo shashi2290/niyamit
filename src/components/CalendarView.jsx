@@ -10,11 +10,15 @@ import {
   isSameDay,
   addMonths,
   subMonths,
+  addDays,
+  subDays,
   setHours,
   setMinutes,
   parse,
   addWeeks,
   subWeeks,
+  isAfter,
+  startOfToday
 } from "date-fns";
 import {
   ChevronLeft,
@@ -211,8 +215,18 @@ const WeekGridView = ({
 
   useEffect(() => {
     if (scrollRef.current) {
+      // Vertical scroll to current time
       const nowMins = new Date().getHours() * 60;
       scrollRef.current.scrollTop = Math.max(0, nowMins - 100);
+
+      // Horizontal scroll to center (the 4th day is the center in rolling view)
+      const containerWidth = scrollRef.current.offsetWidth;
+      const contentWidth = scrollRef.current.scrollWidth;
+      if (contentWidth > containerWidth) {
+        // center is at 70px (time column) + 400px (middle of 800px grid) = 470px
+        // We want 470px at containerWidth / 2
+        scrollRef.current.scrollLeft = 470 - containerWidth / 2;
+      }
     }
   }, []);
 
@@ -223,9 +237,10 @@ const WeekGridView = ({
 
   const HEADER_HEIGHT = 120;
 
-  const weekStart = startOfWeek(currentDate);
-  const weekEnd = endOfWeek(currentDate);
-  const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
+  const weekDays = eachDayOfInterval({
+    start: subDays(currentDate, 3),
+    end: addDays(currentDate, 3),
+  });
 
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
   const nowTop = (nowMinutes / 60) * PIXELS_PER_HOUR;
@@ -348,7 +363,7 @@ const WeekGridView = ({
                     gap: "0.25rem",
                   }}
                 >
-                  {clipboardTasks ? (
+                  {clipboardTasks && isAfter(day, startOfToday()) ? (
                     <button
                       className="btn-icon"
                       style={{ padding: "2px", width: "20px", height: "20px" }}
@@ -369,6 +384,7 @@ const WeekGridView = ({
                           width: "20px",
                           height: "20px",
                         }}
+                        disabled={clipboardTasks?.length > 0}
                         onClick={(e) => {
                           e.stopPropagation();
                           handleCopyDayTasks(day);
@@ -564,13 +580,13 @@ const CalendarView = () => {
   const nextWeek = () => {
     const next = addWeeks(currentDate, 1);
     setCurrentDate(next);
-    setSelectedDate(startOfWeek(next));
+    setSelectedDate(next);
   };
 
   const prevWeek = () => {
     const prev = subWeeks(currentDate, 1);
     setCurrentDate(prev);
-    setSelectedDate(startOfWeek(prev));
+    setSelectedDate(prev);
   };
 
   const handleTimeSlotClick = (date, hour) => {
@@ -991,7 +1007,10 @@ const CalendarView = () => {
             <h2 className="text-2xl font-bold">
               {viewMode === "Month" && format(currentDate, "MMMM yyyy")}
               {viewMode === "Week" &&
-                `Week of ${format(startOfWeek(currentDate), "MMM d, yyyy")}`}
+                `${format(subDays(currentDate, 3), "MMM d")} - ${format(
+                  addDays(currentDate, 3),
+                  "MMM d, yyyy"
+                )}`}
               {viewMode === "Day" && format(selectedDate, "MMM d, yyyy")}
             </h2>
             <p className="text-muted">
