@@ -153,18 +153,31 @@ const DayTimeGridView = ({
         {currentTasks.map((task) => {
           const { top, height } = getTopHeight(task.startTime, task.endTime);
           const editable = isTaskEditable(task);
+
+          // Check if task is currently active
+          const [startH, startM] = task.startTime.split(":").map(Number);
+          const [endH, endM] = task.endTime.split(":").map(Number);
+          const taskStartMin = startH * 60 + (startM || 0);
+          const taskEndMin = endH * 60 + (endM || 0);
+          const isToday = isSameDay(selectedDate, new Date());
+          const isCurrent = isToday && nowMinutes >= taskStartMin && nowMinutes < taskEndMin && !task.completed;
+
           return (
             <div
               key={getTaskId(task)}
-              className="task-block"
+              className={`task-block ${isCurrent ? "task-current" : ""}`}
               style={{
                 top: `${top}px`,
                 height: `${height}px`,
                 backgroundColor: task.completed
                   ? "var(--bg-secondary)"
-                  : task.category.color + "33",
-                borderLeft: `4px solid ${task.category.color}`,
-                opacity: task.completed ? 0.6 : 1,
+                  : !isTaskEditable(task)
+                    ? "rgba(239, 68, 68, 0.15)"
+                    : task.category.color + "33",
+                borderLeft: task.completed
+                  ? `4px solid var(--bg-tertiary)`
+                  : `4px solid ${task.category.color}`,
+                opacity: task.completed || !isTaskEditable(task) ? 0.6 : 1,
                 cursor: editable ? "grab" : "default",
               }}
               draggable={editable}
@@ -179,9 +192,30 @@ const DayTimeGridView = ({
                 className="task-block-title"
                 style={{
                   textDecoration: task.completed ? "line-through" : "none",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
                 }}
               >
-                {task.title}
+                {task.completed ? (
+                  <CheckCircle2
+                    size={12}
+                    style={{ color: "var(--success)", flexShrink: 0 }}
+                  />
+                ) : (
+                  <X
+                    size={12}
+                    style={{
+                      color: isTaskEditable(task)
+                        ? "var(--text-muted)"
+                        : "var(--danger)",
+                      flexShrink: 0,
+                    }}
+                  />
+                )}
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {task.title}
+                </span>
               </div>
               <div className="task-block-time">
                 {task.startTime} - {task.endTime}
@@ -439,18 +473,34 @@ const WeekGridView = ({
                     task.endTime
                   );
                   const editable = isTaskEditable(task);
+
+                  // Check if task is currently active
+                  const [startH, startM] = task.startTime.split(":").map(Number);
+                  const [endH, endM] = task.endTime.split(":").map(Number);
+                  const taskStartMin = startH * 60 + (startM || 0);
+                  const taskEndMin = endH * 60 + (endM || 0);
+                  const isCurrent = isToday && nowMinutes >= taskStartMin && nowMinutes < taskEndMin && !task.completed;
+
                   return (
                     <div
                       key={getTaskId(task)}
-                      className="task-block"
+                      className={`task-block ${isCurrent ? "task-current" : ""}`}
                       style={{
                         top: `${top}px`,
                         height: `${height}px`,
                         backgroundColor: task.completed
                           ? "var(--bg-secondary)"
-                          : task.category.color + "33",
-                        borderLeft: `4px solid ${task.category.color}`,
-                        opacity: task.completed ? 0.6 : 1,
+                          : !isTaskEditable(task)
+                            ? "rgba(239, 68, 68, 0.15)"
+                            : task.category.color + "33",
+                        borderLeft: task.completed
+                          ? `4px solid var(--bg-tertiary)`
+                          : `4px solid ${task.category.color}`,
+                        opacity:
+                          task.completed || !isTaskEditable(task) ? 0.6 : 1,
+                        textDecoration: task.completed
+                          ? "line-through"
+                          : "none",
                         fontSize: "0.7rem",
                         padding: "2px 4px",
                         left: "2px",
@@ -473,9 +523,38 @@ const WeekGridView = ({
                           whiteSpace: "nowrap",
                           overflow: "hidden",
                           textOverflow: "ellipsis",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px",
                         }}
                       >
-                        {task.title}
+                        {task.completed ? (
+                          <CheckCircle2
+                            size={15}
+                            style={{ color: "var(--success)", flexShrink: 0 }}
+                          />
+                        ) : (
+                          !isTaskEditable(task) && (
+                            <X
+                              size={15}
+                              style={{
+                                color: isTaskEditable(task)
+                                  ? "var(--text-muted)"
+                                  : "var(--danger)",
+                                flexShrink: 0,
+                              }}
+                            />
+                          )
+                        )}
+                        <span
+                          style={{
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            fontSize: "0.75rem",
+                          }}
+                        >
+                          {task.title}
+                        </span>
                       </div>
                     </div>
                   );
@@ -1009,7 +1088,7 @@ const CalendarView = () => {
               {viewMode === "Week" &&
                 `${format(subDays(currentDate, 3), "MMM d")} - ${format(
                   addDays(currentDate, 3),
-                  "MMM d, yyyy"
+                  "MMM d, yyyy",
                 )}`}
               {viewMode === "Day" && format(selectedDate, "MMM d, yyyy")}
             </h2>
@@ -1039,8 +1118,8 @@ const CalendarView = () => {
                   viewMode === "Month"
                     ? prevMonth
                     : viewMode === "Week"
-                    ? prevWeek
-                    : prevDay
+                      ? prevWeek
+                      : prevDay
                 }
                 className="btn-icon"
               >
@@ -1063,8 +1142,8 @@ const CalendarView = () => {
                   viewMode === "Month"
                     ? nextMonth
                     : viewMode === "Week"
-                    ? nextWeek
-                    : nextDay
+                      ? nextWeek
+                      : nextDay
                 }
                 className="btn-icon"
               >
@@ -1297,84 +1376,91 @@ const CalendarView = () => {
           className="scrollbox"
         >
           {selectedDateTasks.length > 0 ? (
-            selectedDateTasks.map((task) => (
-              <div
-                key={getTaskId(task)}
-                className={`task-item ${
-                  task.completed ? "task-completed" : ""
-                }`}
-              >
-                <button
-                  onClick={() => handleToggleTask(task)}
-                  style={{
-                    color: task.completed
-                      ? "var(--success)"
-                      : "var(--text-muted)",
-                  }}
+            selectedDateTasks.map((task) => {
+              const isMissed = !task.completed && !isTaskEditable(task);
+              return (
+                <div
+                  key={getTaskId(task)}
+                  className={`task-item ${
+                    task.completed ? "task-completed" : ""
+                  } ${isMissed ? "task-missed" : ""}`}
                 >
-                  {task.completed ? (
-                    <CheckCircle2 size={20} />
-                  ) : (
-                    <Circle size={20} />
-                  )}
-                </button>
-                <div style={{ flex: 1 }}>
-                  <div className="flex-between">
-                    <p className="task-title" style={{ fontWeight: 500 }}>
-                      {task.title}
-                    </p>
-                    {task.startTime && (
-                      <span
-                        className="text-xs text-muted"
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "4px",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        <Clock size={10} /> {task.startTime} - {task.endTime}
-                      </span>
-                    )}
-                  </div>
-                  <div
+                  <button
+                    onClick={() => handleToggleTask(task)}
                     style={{
-                      display: "flex",
-                      gap: "0.5rem",
-                      marginTop: "0.5rem",
-                      alignItems: "center",
+                      color: task.completed
+                        ? "var(--success)"
+                        : isMissed
+                          ? "var(--danger)"
+                          : "var(--text-muted)",
                     }}
                   >
-                    <span
-                      className="badge"
+                    {task.completed ? (
+                      <CheckCircle2 size={20} />
+                    ) : isMissed ? (
+                      <X size={20} />
+                    ) : (
+                      <Circle size={20} />
+                    )}
+                  </button>
+                  <div style={{ flex: 1 }}>
+                    <div className="flex-between">
+                      <p className="task-title" style={{ fontWeight: 500 }}>
+                        {task.title}
+                      </p>
+                      {task.startTime && (
+                        <span
+                          className="text-xs text-muted"
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "4px",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          <Clock size={10} /> {task.startTime} - {task.endTime}
+                        </span>
+                      )}
+                    </div>
+                    <div
                       style={{
-                        backgroundColor: task.category.color,
-                        color: "white",
+                        display: "flex",
+                        gap: "0.5rem",
+                        marginTop: "0.5rem",
+                        alignItems: "center",
                       }}
                     >
-                      {task.category.label}
-                    </span>
+                      <span
+                        className="badge"
+                        style={{
+                          backgroundColor: task.category.color,
+                          color: "white",
+                        }}
+                      >
+                        {task.category.label}
+                      </span>
 
-                    <button
-                      onClick={() => handleEditClick(task)}
-                      className="text-muted hover:text-primary ml-auto"
-                      style={{ marginLeft: "auto", padding: "4px" }}
-                      title="Edit Task"
-                    >
-                      <Pencil size={14} />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteTask(getTaskId(task))}
-                      className="text-muted hover:text-danger"
-                      style={{ padding: "4px" }}
-                      title="Delete Task"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                      <button
+                        onClick={() => handleEditClick(task)}
+                        className="text-muted hover:text-primary ml-auto"
+                        style={{ marginLeft: "auto", padding: "4px" }}
+                        title="Edit Task"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteTask(getTaskId(task))}
+                        className="text-muted hover:text-danger"
+                        style={{ padding: "4px" }}
+                        title="Delete Task"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           ) : (
             <div
               className="text-center text-muted"

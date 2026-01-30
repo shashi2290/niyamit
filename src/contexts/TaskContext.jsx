@@ -46,15 +46,27 @@ export const TaskProvider = ({ children }) => {
     }, [isLoaded, isSignedIn, getToken]);
 
     const toggleTask = async (taskId) => {
+        // Optimistic Update
+        const originalTasks = [...tasks];
+        setTasks(prev => prev.map(t => {
+            if ((t._id || t.id) === taskId) {
+                return { ...t, completed: !t.completed };
+            }
+            return t;
+        }));
+
         try {
             const token = await getToken();
             const updatedTask = await taskAPI.toggle(token, taskId);
+            // Sync with server response
             setTasks(prev => prev.map(t =>
                 (t._id || t.id) === taskId ? updatedTask : t
             ));
         } catch (err) {
             console.error('Error toggling task:', err);
             setError(err.message);
+            // Revert on error
+            setTasks(originalTasks);
         }
     };
 
