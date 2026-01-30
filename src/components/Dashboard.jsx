@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, Fragment } from 'react';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
 
@@ -11,6 +11,176 @@ import {
     startOfWeek, endOfWeek, eachDayOfInterval, addMonths, subMonths,
     addWeeks, subWeeks, addDays, subDays as dateFnsSubDays, getHours, parse
 } from 'date-fns';
+
+const ActivityHeatmap = ({ tasks, today }) => {
+    // Generate last 365 days
+    const days = eachDayOfInterval({
+        start: subDays(today, 364),
+        end: today
+    });
+
+    // Group by weeks (Sunday start)
+    const weeks = [];
+    const startDay = days[0].getDay();
+    let currentWeek = Array(startDay).fill(null);
+
+    days.forEach((day) => {
+        const dayOfWeek = day.getDay(); // 0 = Sun, 6 = Sat
+        if (dayOfWeek === 0 && currentWeek.length > 0) {
+            weeks.push(currentWeek);
+            currentWeek = [];
+        }
+        currentWeek.push(day);
+    });
+    if (currentWeek.length > 0) weeks.push(currentWeek);
+
+    // Calculate intensity for each day
+    const getColor = (level) => {
+        switch(level) {
+            case 0: return '#161b22'; // GitHub Dark Empty
+            case 1: return '#0e4429'; // Low
+            case 2: return '#006d32'; // Medium-Low
+            case 3: return '#26a641'; // Medium-High
+            case 4: return '#39d353'; // High
+            default: return '#161b22';
+        }
+    };
+
+    const monthLabels = [];
+    let currentMonthEntry = null;
+
+    weeks.forEach((week, wIdx) => {
+        const firstDay = week.find(d => d);
+        const month = firstDay ? firstDay.getMonth() : -1;
+        const prevWeek = wIdx > 0 ? weeks[wIdx - 1] : null;
+        const prevFirstDay = prevWeek ? prevWeek.find(d => d) : null;
+        const prevMonth = prevFirstDay ? prevFirstDay.getMonth() : -1;
+
+        if (month !== prevMonth) {
+            if (currentMonthEntry) {
+                currentMonthEntry.endIndex = wIdx;
+                monthLabels.push(currentMonthEntry);
+            }
+            currentMonthEntry = {
+                startIndex: wIdx,
+                label: format(firstDay || new Date(), 'MMM')
+            };
+        }
+    });
+    
+    // Add the last month
+    if (currentMonthEntry) {
+        currentMonthEntry.endIndex = weeks.length;
+        monthLabels.push(currentMonthEntry);
+    }
+
+    const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    return (
+        <div className="glass-panel mb-4">
+            <h3 className="text-lg font-bold mb-4">Activity Heatmap</h3>
+            <div className="heatmap-container">
+                <div className="heatmap-months-row" style={{ 
+                    position: 'relative', 
+                    height: '20px', 
+                    marginBottom: '4px', 
+                    display: 'block',
+                    marginLeft: '32px',
+                    width: 'calc(100% - 32px)'
+                }}>
+                    {monthLabels.map((ml, idx) => {
+                        const centerIndex = (ml.startIndex + ml.endIndex) / 2;
+                        return (
+                            <div 
+                                key={idx} 
+                                style={{ 
+                                    position: 'absolute', 
+                                    left: `${(centerIndex / weeks.length) * 100}%`,
+                                    fontSize: '10px',
+                                    color: 'var(--text-muted)',
+                                    whiteSpace: 'nowrap',
+                                    transform: 'translateX(-50%)'
+                                }}
+                            >
+                                {ml.label}
+                            </div>
+                        );
+                    })}
+                </div>
+                <div className="heatmap-grid" style={{ 
+                    display: 'grid', 
+                    width: '100%', 
+                    gap: '2px',
+                    gridTemplateColumns: `30px repeat(${weeks.length}, 1fr)`,
+                    gridTemplateRows: 'repeat(7, 1fr)',
+                    gridAutoFlow: 'column'
+                }}>
+                    {/* Day Labels */}
+                    {weekDays.map((day, idx) => (
+                         <div 
+                            key={`label-${idx}`} 
+                            style={{ 
+                                fontSize: '10px', 
+                                color: 'var(--text-muted)', 
+                                display: 'flex', 
+                                alignItems: 'center',
+                                justifyContent: 'flex-start'
+                            }}
+                        >
+                            {day}
+                        </div>
+                    ))}
+
+                    {weeks.map((week, wIdx) => (
+                        <Fragment key={wIdx}>
+                            {week.map((day, dIdx) => {
+                                if (!day) return <div key={`empty-${wIdx}-${dIdx}`} />;
+
+                                const dateStr = format(day, 'yyyy-MM-dd');
+                                const dayTasks = tasks.filter(t => t.date === dateStr);
+                                const total = dayTasks.length;
+                                const completed = dayTasks.filter(t => t.completed).length;
+                                
+                                let level = 0;
+                                if (total > 0) {
+                                    const rate = completed / total;
+                                    if (rate === 1) level = 4;
+                                    else if (rate >= 0.66) level = 3;
+                                    else if (rate >= 0.33) level = 2;
+                                    else level = 1;
+                                }
+
+                                return (
+                                    <div 
+                                        key={dIdx} 
+                                        className="heatmap-cell"
+                                        style={{ 
+                                            backgroundColor: getColor(level),
+                                            width: '100%',
+                                            aspectRatio: '1',
+                                            borderRadius: '2px'
+                                        }}
+                                        title={`${format(day, 'MMM d, yyyy')}: ${completed}/${total} completed`}
+                                    />
+                                );
+                            })}
+                        </Fragment>
+                    ))}
+                </div>
+            </div>
+
+            <div className="flex gap-2 items-center text-xs text-muted mt-2" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)', marginLeft: '32px' }}>
+                <span>Less</span>
+                <div className="heatmap-cell" style={{backgroundColor: getColor(0), width: '12px', height: '12px'}}></div>
+                <div className="heatmap-cell" style={{backgroundColor: getColor(1), width: '12px', height: '12px'}}></div>
+                <div className="heatmap-cell" style={{backgroundColor: getColor(2), width: '12px', height: '12px'}}></div>
+                <div className="heatmap-cell" style={{backgroundColor: getColor(3), width: '12px', height: '12px'}}></div>
+                <div className="heatmap-cell" style={{backgroundColor: getColor(4), width: '12px', height: '12px'}}></div>
+                <span>More</span>
+            </div>
+        </div>
+    );
+};
 
 const Dashboard = () => {
     const { tasks } = useTasks();
@@ -373,6 +543,9 @@ const Dashboard = () => {
             </p>
           </div>
         </div>
+
+        {/* Activity Heatmap (Visible in Week View) */}
+        {viewMode === "Week" && <ActivityHeatmap tasks={tasks} today={today} />}
 
         {/* Charts Grid */}
         <div className="charts-grid">
