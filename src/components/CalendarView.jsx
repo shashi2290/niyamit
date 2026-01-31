@@ -623,6 +623,7 @@ const CalendarView = () => {
 
   // Clipboard State
   const [clipboardTasks, setClipboardTasks] = useState(null);
+  const [clipboardSingleTask, setClipboardSingleTask] = useState(null);
 
   // Initialize selected tag
   useEffect(() => {
@@ -630,6 +631,85 @@ const CalendarView = () => {
       setSelectedTagId(tags[0].id);
     }
   }, [tags, selectedTagId]);
+
+  // Keyboard Shortcuts for Copy/Paste
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Check for Ctrl+C / Meta+C
+      if ((e.ctrlKey || e.metaKey) && e.key === "c") {
+        if (editingTaskId) {
+           // Prevent default only if we are not copying text selection?
+           // Actually, if a user is editing the title and selects text, they want to copy text.
+           // If they are just editing but no text selected, maybe copy task?
+           // Let's stick to: if editingTaskId is set, we copy the task to our internal clipboard
+           // regarless of text selection, but we DON'T preventDefault so system copy works too.
+           const task = tasks.find(t => getTaskId(t) === editingTaskId);
+           if (task) {
+             setClipboardSingleTask(task);
+             toast.success("Task copied to clipboard", { duration: 1000 });
+           }
+        }
+      }
+
+      // Check for Ctrl+V / Meta+V
+      if ((e.ctrlKey || e.metaKey) && e.key === "v") {
+        if (clipboardSingleTask) {
+          // Heuristic: If active element is an input and has value, assume text paste.
+          // If input is empty or body is active, assume task paste.
+          const activeEl = document.activeElement;
+          const isInput = activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA";
+          const hasText = isInput && activeEl.value.length > 0;
+          
+          if (!hasText) {
+             e.preventDefault();
+             
+             // 1. Calculate Target Date/Time
+             const targetDateStr = format(selectedDate, "yyyy-MM-dd");
+             const [h, m] = newStartTime.split(':').map(Number);
+             const targetDateTime = parse(targetDateStr, "yyyy-MM-dd", new Date());
+             targetDateTime.setHours(h, m, 0, 0);
+
+             // 2. Validate Future
+             const now = new Date();
+             if (targetDateTime < now) {
+                toast.error("Cannot paste task to a past time", { duration: 1000 });
+                return;
+             }
+
+             // 3. Create Task
+             // Calculate duration
+             const [startH, startM] = clipboardSingleTask.startTime.split(":").map(Number);
+             const [endH, endM] = clipboardSingleTask.endTime.split(":").map(Number);
+             const durationMins = (endH * 60 + endM) - (startH * 60 + startM);
+             
+             // New End Time
+             const newStartMins = h * 60 + m;
+             const newEndMins = newStartMins + durationMins;
+             
+             const newEndH = Math.floor(newEndMins / 60);
+             const newEndM = newEndMins % 60;
+             const newEndTimeStr = `${newEndH.toString().padStart(2, '0')}:${newEndM.toString().padStart(2, '0')}`;
+
+             const newTask = {
+                ...clipboardSingleTask,
+                _id: undefined, // Clear ID
+                id: undefined,
+                date: targetDateStr,
+                startTime: newStartTime,
+                endTime: newEndTimeStr,
+                completed: false,
+             };
+             
+             addTask(newTask);
+             toast.success("Task pasted", { duration: 1000 });
+          }
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [editingTaskId, clipboardSingleTask, selectedDate, newStartTime, tasks, addTask]);
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(monthStart);
@@ -683,6 +763,13 @@ const CalendarView = () => {
     setSelectedDate(prev);
   };
 
+  const buttonLabel =
+    viewMode === "Month"
+      ? "This Month"
+      : viewMode === "Week"
+        ? "This Week"
+        : "Today";
+
   const handleTimeSlotClick = (date, hour) => {
     const startTime = `${hour.toString().padStart(2, "0")}:00`;
     const endTime = `${(hour + 1).toString().padStart(2, "0")}:00`;
@@ -706,11 +793,6 @@ const CalendarView = () => {
 
   // Prepare Edit
   const handleEditClick = (task) => {
-    if (!isTaskEditable(task)) {
-        toast.error("This task is locked and cannot be edited.", { duration: 1000 });
-        return;
-    }
-
     setEditingTaskId(getTaskId(task));
     setNewTaskTitle(task.title);
     setNewStartTime(task.startTime || "09:00");
@@ -1092,6 +1174,9 @@ const CalendarView = () => {
     </div>
   );
 
+  const editingTask = tasks.find((t) => getTaskId(t) === editingTaskId);
+  const isEditingLocked = editingTask ? !isTaskEditable(editingTask) : false;
+
   return (
     <div className="calendar-layout">
       {/* Calendar Section */}
@@ -1149,7 +1234,7 @@ const CalendarView = () => {
                 }}
                 className="btn-sm"
               >
-                Today
+                {buttonLabel}
               </button>
 
               <button
@@ -1219,8 +1304,13 @@ const CalendarView = () => {
                 alignItems: "center",
               }}
             >
-              <span className="text-xs text-primary font-bold uppercase tracking-wider">
-                Editing Task
+              <span className="text-xs text-primary font-bold uppercase tracking-wider flex items-center gap-1">
+                {isEditingLocked ? (
+                   <>
+                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--danger)' }}></div>
+                     Locked Task
+                   </>
+                ) : "Editing Task"}
               </span>
               <button
                 onClick={handleCancelEdit}
@@ -1241,7 +1331,7 @@ const CalendarView = () => {
           >
             <div
               style={{
-                background: "var(--bg-secondary)",
+                background: isEditingLocked ? "var(--bg-tertiary)" : "var(--bg-secondary)",
                 padding: "0.25rem 0.5rem",
                 borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--bg-tertiary)",
@@ -1252,13 +1342,14 @@ const CalendarView = () => {
                 value={newStartTime}
                 onChange={(e) => setNewStartTime(e.target.value)}
                 className="input-reset"
-                style={{ width: "auto", fontSize: "0.75rem" }}
+                disabled={isEditingLocked}
+                style={{ width: "auto", fontSize: "0.75rem", opacity: isEditingLocked ? 0.5 : 1 }}
               />
             </div>
             <span className="text-muted">-</span>
             <div
               style={{
-                background: "var(--bg-secondary)",
+                background: isEditingLocked ? "var(--bg-tertiary)" : "var(--bg-secondary)",
                 padding: "0.25rem 0.5rem",
                 borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--bg-tertiary)",
@@ -1269,7 +1360,8 @@ const CalendarView = () => {
                 value={newEndTime}
                 onChange={(e) => setNewEndTime(e.target.value)}
                 className="input-reset"
-                style={{ width: "auto", fontSize: "0.75rem" }}
+                disabled={isEditingLocked}
+                style={{ width: "auto", fontSize: "0.75rem", opacity: isEditingLocked ? 0.5 : 1 }}
               />
             </div>
           </div>
@@ -1281,6 +1373,8 @@ const CalendarView = () => {
             className="input-reset"
             value={newTaskTitle}
             onChange={(e) => setNewTaskTitle(e.target.value)}
+            disabled={isEditingLocked}
+            style={{ opacity: isEditingLocked ? 0.5 : 1 }}
             onKeyDown={(e) => {
               if (e.key === "Enter") handleSaveTask();
             }}
@@ -1304,9 +1398,11 @@ const CalendarView = () => {
                     padding: "0.25rem 0.5rem",
                     borderRadius: "4px",
                     backgroundColor: "var(--bg-tertiary)",
+                    opacity: isEditingLocked ? 0.5 : 1
                   }}
                   value={selectedTagId}
                   onChange={(e) => setSelectedTagId(e.target.value)}
+                  disabled={isEditingLocked}
                 >
                   {tags.map((tag) => (
                     <option key={tag.id} value={tag.id}>
@@ -1318,6 +1414,8 @@ const CalendarView = () => {
                   onClick={() => setIsCreatingTag(true)}
                   className="text-xs text-muted hover:text-primary"
                   title="Create new tag"
+                  disabled={isEditingLocked}
+                  style={{ opacity: isEditingLocked ? 0.5 : 1 }}
                 >
                   <Plus size={16} />
                 </button>
@@ -1365,17 +1463,19 @@ const CalendarView = () => {
             <button
               onClick={handleSaveTask}
               className=""
+              disabled={isEditingLocked}
               style={{
                 marginLeft: "auto",
-                background: editingTaskId ? "var(--primary)" : "var(--primary)",
-                color: editingTaskId ? "white" : "white",
+                background: isEditingLocked ? "var(--bg-tertiary)" : (editingTaskId ? "var(--primary)" : "var(--primary)"),
+                color: isEditingLocked ? "var(--text-muted)" : (editingTaskId ? "white" : "white"),
                 border: "none",
                 borderRadius: "4px",
                 padding: "2px 8px",
                 fontSize: "0.75rem",
+                cursor: isEditingLocked ? "not-allowed" : "pointer",
               }}
             >
-              {editingTaskId ? "Update" : "Add"}
+              {isEditingLocked ? "Locked" : (editingTaskId ? "Update" : "Add")}
             </button>
           </div>
         </div>
