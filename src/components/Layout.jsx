@@ -86,12 +86,12 @@ const Sidebar = () => {
 
 const Layout = () => {
     return (
-        <div className="app-wrapper">
-            <Sidebar />
-            <main className="main-content">
-                <Outlet />
-            </main>
-        </div>
+      <div className="app-wrapper scrollbox">
+        <Sidebar />
+        <main className="main-content">
+          <Outlet />
+        </main>
+      </div>
     );
 };
 

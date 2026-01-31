@@ -80,98 +80,104 @@ const ActivityHeatmap = ({ tasks, today }) => {
       <div className="glass-panel mb-4">
         <h3 className="text-lg font-bold mb-4">Activity Heatmap</h3>
         <div className="heatmap-container">
-          <div
-            className="heatmap-months-row"
-            style={{
-              position: "relative",
-              height: "20px",
-              marginBottom: "4px",
-              display: "block",
-              marginLeft: "32px",
-              width: "calc(100% - 32px)",
-            }}
-          >
-            {monthLabels.map((ml, idx) => {
-              const centerIndex = (ml.startIndex + ml.endIndex) / 2;
-              return (
+          <div className="">
+            <div
+              className="heatmap-months-row"
+              style={{
+                position: "relative",
+                height: "20px",
+                marginBottom: "4px",
+                display: "block",
+                marginLeft: "32px",
+                width: "calc(100% - 32px)",
+              }}
+            >
+              {monthLabels.map((ml, idx) => {
+                const centerIndex = (ml.startIndex + ml.endIndex) / 2;
+                return (
+                  <div
+                    key={idx}
+                    style={{
+                      position: "absolute",
+                      left: `${(centerIndex / weeks.length) * 100}%`,
+                      fontSize: "10px",
+                      color: "var(--text-muted)",
+                      whiteSpace: "nowrap",
+                      transform: "translateX(-50%)",
+                    }}
+                  >
+                    {ml.label}
+                  </div>
+                );
+              })}
+            </div>
+            <div
+              className="heatmap-grid"
+              style={{
+                display: "grid",
+                width: "100%",
+                gap: "2px",
+                gridTemplateColumns: `30px repeat(${weeks.length}, 1fr)`,
+                gridTemplateRows: "repeat(7, 1fr)",
+                gridAutoFlow: "column",
+              }}
+            >
+              {/* Day Labels */}
+              {weekDays.map((day, idx) => (
                 <div
-                  key={idx}
+                  key={`label-${idx}`}
                   style={{
-                    position: "absolute",
-                    left: `${(centerIndex / weeks.length) * 100}%`,
                     fontSize: "10px",
                     color: "var(--text-muted)",
-                    whiteSpace: "nowrap",
-                    transform: "translateX(-50%)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "flex-start",
                   }}
                 >
-                  {ml.label}
+                  {day}
                 </div>
-              );
-            })}
-          </div>
-          <div
-            className="heatmap-grid"
-            style={{
-              display: "grid",
-              width: "100%",
-              gap: "2px",
-              gridTemplateColumns: `30px repeat(${weeks.length}, 1fr)`,
-              gridTemplateRows: "repeat(7, 1fr)",
-              gridAutoFlow: "column",
-            }}
-          >
-            {/* Day Labels */}
-            {weekDays.map((day, idx) => (
-              <div
-                key={`label-${idx}`}
-                style={{
-                  fontSize: "10px",
-                  color: "var(--text-muted)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "flex-start",
-                }}
-              >
-                {day}
-              </div>
-            ))}
+              ))}
 
-            {weeks.map((week, wIdx) => (
-              <Fragment key={wIdx}>
-                {week.map((day, dIdx) => {
-                  if (!day) return <div key={`empty-${wIdx}-${dIdx}`} />;
+              {weeks.map((week, wIdx) => (
+                <Fragment key={wIdx}>
+                  {week.map((day, dIdx) => {
+                    if (!day) return <div key={`empty-${wIdx}-${dIdx}`} />;
 
-                  const dateStr = format(day, "yyyy-MM-dd");
-                  const dayTasks = tasks.filter((t) => t.date === dateStr);
-                  const total = dayTasks.length;
-                  const completed = dayTasks.filter((t) => t.completed).length;
+                    const dateStr = format(day, "yyyy-MM-dd");
+                    const dayTasks = tasks.filter((t) => t.date === dateStr);
+                    const total = dayTasks.length;
+                    const completed = dayTasks.filter(
+                      (t) => t.completed,
+                    ).length;
 
-                  let level = 0;
-                  if (total > 0) {
-                    const rate = completed / total;
-                    if (rate === 1) level = 4;
-                    else if (rate >= 0.66) level = 3;
-                    else if (rate >= 0.33) level = 2;
-                    else level = 1;
-                  }
+                    let level = 0;
+                    if (total > 0) {
+                      const rate = completed / total;
+                      if (rate === 1) level = 4;
+                      else if (rate >= 0.66) level = 3;
+                      else if (rate >= 0.33) level = 2;
+                      else level = 1;
+                    }
 
-                  return (
-                    <div
-                      key={dIdx}
-                      className="heatmap-cell"
-                      style={{
-                        backgroundColor: getColor(level),
-                        width: "100%",
-                        aspectRatio: "1",
-                        borderRadius: "2px",
-                      }}
-                      title={`${format(day, "MMM d, yyyy")}: ${completed}/${total} completed`}
-                    />
-                  );
-                })}
-              </Fragment>
-            ))}
+                    return (
+                      <div
+                        key={dIdx}
+                        className="heatmap-cell tooltip-container"
+                        style={{
+                          backgroundColor: getColor(level),
+                          width: "100%",
+                          aspectRatio: "1",
+                          borderRadius: "2px",
+                        }}
+                        // title={`${format(day, "MMM d, yyyy")}: ${completed}/${total} completed`}
+                        data-tooltip={`${format(day, "MMM d, yyyy")}: ${completed}/${total} completed`}
+                        data-direction="left"
+                      />
+                    );
+                  })}
+                </Fragment>
+              ))}
+            </div>
           </div>
         </div>
       </div>

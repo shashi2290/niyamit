@@ -470,7 +470,7 @@ button {
 }
 
 .scrollbox::-webkit-scrollbar {
-  width: 8px;
+  width: 5px;
 }
 
 .scrollbox::-webkit-scrollbar-track {
@@ -479,7 +479,7 @@ button {
 
 .scrollbox::-webkit-scrollbar-thumb {
   background-color: #555;
-  border-radius: 8px;
+  border-radius: 5px;
 }
 
 .month-view-container {
@@ -614,7 +614,11 @@ button {
 .heatmap-container {
   overflow-x: auto;
   padding-bottom: 1rem;
-  max-width: 1024px;
+  max-width: 100%;
+    display: flex;
+    justify-content: start;
+    padding: 0.5rem 1rem;
+    /* overflow: hidden; */
 }
 
 .heatmap-grid {
@@ -649,20 +653,6 @@ button {
   border: 1px solid var(--text-primary);
 }
 
-.heatmap-tooltip {
-  position: absolute;
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--glass-border);
-  padding: 0.5rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  z-index: 100;
-  pointer-events: none;
-  white-space: nowrap;
-  box-shadow: var(--glass-shadow);
-  transform: translate(-50%, -120%);
-}
-
 .heatmap-months-row {
   display: flex;
   justify-content: space-between;
@@ -685,4 +675,26 @@ button {
   font-size: 10px;
   color: var(--text-muted);
   white-space: nowrap;
+}
+.tooltip-container {
+  position: relative;
+}
+
+.tooltip-container:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: -30px;
+  /* Adjust based on your needs */
+  left: 20%;
+  max-width: min(200px, 80vw);
+  transform: translateX(-50%);
+  background: #333;
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 100;
+  /* This makes it instantaneous */
+  /* display: */
 }

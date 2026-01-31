@@ -179,6 +179,11 @@ const DayTimeGridView = ({
                   : `4px solid ${task.category.color}`,
                 opacity: task.completed || !isTaskEditable(task) ? 0.6 : 1,
                 cursor: editable ? "grab" : "default",
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "start",
+                gap: "10px",
               }}
               draggable={editable}
               onDragStart={(e) => handleDragStart(e, task)}
@@ -203,21 +208,30 @@ const DayTimeGridView = ({
                     style={{ color: "var(--success)", flexShrink: 0 }}
                   />
                 ) : (
-                  <X
-                    size={12}
-                    style={{
-                      color: isTaskEditable(task)
-                        ? "var(--text-muted)"
-                        : "var(--danger)",
-                      flexShrink: 0,
-                    }}
-                  />
+                  !isTaskEditable(task) && (
+                    <X
+                      size={12}
+                      style={{
+                        color: isTaskEditable(task)
+                          ? "var(--text-muted)"
+                          : "var(--danger)",
+                        flexShrink: 0,
+                      }}
+                    />
+                  )
                 )}
                 <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
                   {task.title}
                 </span>
               </div>
-              <div className="task-block-time">
+              <div
+                className="task-block-time"
+                style={{
+                  flexShrink: 0,
+                  fontSize: "0.75rem",
+                  color: "var(--text-muted)",
+                }}
+              >
                 {task.startTime} - {task.endTime}
               </div>
             </div>
