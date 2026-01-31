@@ -35,6 +35,7 @@ import {
   Trash2,
 } from "lucide-react";
 import confetti from "canvas-confetti";
+import { toast } from "sonner";
 import { useTasks } from "../contexts/TaskContext";
 
 // Helper to get task ID (works with both MongoDB _id and fallback id)
@@ -706,7 +707,7 @@ const CalendarView = () => {
   // Prepare Edit
   const handleEditClick = (task) => {
     if (!isTaskEditable(task)) {
-        alert("This task is locked and cannot be edited.");
+        toast.error("This task is locked and cannot be edited.", { duration: 1000 });
         return;
     }
 
@@ -785,7 +786,7 @@ const CalendarView = () => {
   const handleDeleteTask = (taskId) => {
     const task = tasks.find(t => getTaskId(t) === taskId);
     if (task && !isTaskEditable(task)) {
-        alert("This task is locked and cannot be deleted.");
+        toast.error("This task is locked and cannot be deleted.", { duration: 1000 });
         return;
     }
 
@@ -813,7 +814,7 @@ const CalendarView = () => {
 
   const handleToggleTask = (task) => {
     if (!isTaskEditable(task)) {
-        alert("This task is locked and cannot be updated.");
+        toast.error("This task is locked and cannot be updated.", { duration: 1000 });
         return;
     }
 
@@ -953,7 +954,7 @@ const CalendarView = () => {
     const today = new Date();
     today.setHours(0,0,0,0);
     if (targetDateObj < today) {
-        alert("Cannot move task to a past date.");
+        toast.error("Cannot move task to a past date.", { duration: 1000 });
         return;
     }
 

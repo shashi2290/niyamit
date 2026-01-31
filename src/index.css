@@ -31,6 +31,7 @@
   --radius-sm: 8px;
 
   --sidebar-width: 256px;
+  --sidebar-collapsed-width: 80px;
   --header-height: 80px;
 }
 
@@ -92,10 +93,34 @@ button {
   display: flex;
   flex-direction: column;
   z-index: 10;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar.collapsed {
+  width: var(--sidebar-collapsed-width);
 }
 
 .sidebar-header {
   padding: 1.5rem;
+  min-height: 100px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.sidebar.collapsed .sidebar-header {
+    padding: 1rem;
+    align-items: center;
+}
+
+.toggle-btn {
+    color: var(--text-muted);
+    transition: color 0.2s;
+}
+
+.toggle-btn:hover {
+    color: var(--text-primary);
+    background-color: var(--bg-tertiary);
 }
 
 .sidebar-nav {
@@ -104,6 +129,10 @@ button {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+
+.sidebar.collapsed .sidebar-nav {
+    align-items: center;
 }
 
 .nav-item {
@@ -115,6 +144,11 @@ button {
   color: var(--text-secondary);
   transition: all 0.2s ease;
   font-weight: 500;
+}
+
+.sidebar.collapsed .nav-item {
+    padding: 0.75rem;
+    justify-content: center;
 }
 
 .nav-item:hover {
@@ -152,6 +186,12 @@ button {
   flex: 1;
   min-height: 100vh;
   width: calc(100% - var(--sidebar-width));
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.main-content.expanded {
+    margin-left: var(--sidebar-collapsed-width);
+    width: calc(100% - var(--sidebar-collapsed-width));
 }
 
 /* --- Dashboard Components --- */

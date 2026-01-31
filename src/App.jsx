@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { SignedIn, SignedOut, RedirectToSignIn, SignIn, SignUp } from '@clerk/clerk-react';
+import { Toaster } from 'sonner';
 import Layout from './components/Layout';
 import CalendarView from './components/CalendarView';
 import Dashboard from './components/Dashboard';
@@ -33,6 +34,7 @@ function App() {
             <>
               <SignedIn>
                 <TaskProvider>
+                  <Toaster position="top-center" richColors />
                   <Routes>
                     <Route path="/" element={<Layout />}>
                       <Route index element={<Dashboard />} />
