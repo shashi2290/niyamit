@@ -7,31 +7,41 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+      registerType: "autoUpdate",
+      includeAssets: ["favicon.ico", "apple-touch-icon.png", "mask-icon.svg"],
       devOptions: {
-        enabled: true
+        enabled: true,
       },
       manifest: {
-        name: 'Niyamit - Organize your life',
-        short_name: 'Niyamit',
-        description: 'A comprehensive daily planner and task manager.',
-        theme_color: '#0f172a',
-        background_color: '#0f172a',
-        display: 'standalone',
+        name: "Niyamit - Organize your life",
+        short_name: "Niyamit",
+        description: "A comprehensive daily planner and task manager.",
+        theme_color: "#0f172a",
+        background_color: "#0f172a",
+        display: "standalone",
         icons: [
           {
-            src: 'vite.png',
-            sizes: '192x192',
-            type: 'image/png'
+            src: "vite.png",
+            sizes: "192x192",
+            type: "image/png",
           },
           {
-            src: 'vite.png',
-            sizes: '512x512',
-            type: 'image/png'
-          }
-        ]
-      }
-    })
+            src: "vite.png",
+            sizes: "512x512",
+            type: "image/png",
+          },
+        ],
+      },
+    }),
   ],
-})
+  server: {
+    proxy: {
+      "/api": {
+        target: "http://localhost:5000",
+        changeOrigin: true,
+        secure: false,
+        // rewrite: (path) => path.replace(/^\/api/, '')
+      },
+    },
+  },
+});
