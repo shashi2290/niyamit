@@ -1,10 +1,10 @@
-import { useState, useMemo, Fragment } from 'react';
+import { useState, useMemo, Fragment, useEffect } from 'react';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
 
     PieChart, Pie, Cell, BarChart, Bar, ComposedChart
 } from 'recharts';
-import { TrendingUp, AlertCircle, Award, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { TrendingUp, AlertCircle, Award, CheckCircle2, ChevronLeft, ChevronRight, Circle, Clock } from 'lucide-react';
 import { useTasks } from '../contexts/TaskContext';
 import {
     format, subDays, isSameDay, startOfDay, startOfMonth, endOfMonth,
@@ -185,9 +185,16 @@ const ActivityHeatmap = ({ tasks, today }) => {
 };
 
 const Dashboard = () => {
-    const { tasks } = useTasks();
+    const { tasks, toggleTask: contextToggleTask } = useTasks();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [viewMode, setViewMode] = useState('Week'); // 'Month', 'Week', 'Day'
+
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     const today = startOfDay(new Date());
 
@@ -397,7 +404,8 @@ const Dashboard = () => {
             missedList,
             streak,
             todayRate,
-            todayTotal: todayTasks.length
+            todayTotal: todayTasks.length,
+            todayTasksList: todayTasks
         };
     }, [tasks, currentDate, viewMode, today]);
 
@@ -406,6 +414,8 @@ const Dashboard = () => {
         if (viewMode === 'Week') return `Week of ${format(startOfWeek(currentDate), 'MMM d, yyyy')}`;
         return format(currentDate, 'MMMM do, yyyy');
     };
+
+    const getTaskId = (task) => task._id || task.id;
 
     return (
       <div className="page-container">
@@ -455,6 +465,66 @@ const Dashboard = () => {
             </div>
           </div>
         </header>
+
+        {/* Mobile: Today's Tasks Quick View */}
+        {isMobile && stats.todayTasksList.length > 0 && (
+            <div className="mb-6">
+                <h3 className="text-lg font-bold mb-3 flex items-center gap-2">
+                    <CheckCircle2 size={20} className="text-success" />
+                    Today's Tasks
+                </h3>
+                <div 
+                    style={{ 
+                        display: 'flex', 
+                        gap: '1rem', 
+                        overflowX: 'auto', 
+                        paddingBottom: '0.5rem',
+                        scrollbarWidth: 'none',
+                        WebkitOverflowScrolling: 'touch'
+                    }}
+                >
+                    {stats.todayTasksList.map((task) => (
+                        <div 
+                            key={getTaskId(task)}
+                            className="glass-panel"
+                            style={{ 
+                                minWidth: '240px', 
+                                flexShrink: 0,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                padding: '1rem'
+                            }}
+                        >
+                            <button 
+                                onClick={() => contextToggleTask(getTaskId(task))}
+                                style={{ 
+                                    color: task.completed ? 'var(--success)' : 'var(--text-muted)',
+                                    flexShrink: 0
+                                }}
+                            >
+                                {task.completed ? <CheckCircle2 size={24} /> : <Circle size={24} />}
+                            </button>
+                            <div style={{ overflow: 'hidden' }}>
+                                <p style={{ 
+                                    fontWeight: 600, 
+                                    textDecoration: task.completed ? 'line-through' : 'none',
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis'
+                                }}>
+                                    {task.title}
+                                </p>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <Clock size={10} className="text-muted" />
+                                    <span className="text-xs text-muted">{task.startTime}</span>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        )}
 
         {/* Top Stats Cards */}
         <div className="stats-grid">

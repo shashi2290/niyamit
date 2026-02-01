@@ -738,3 +738,156 @@ button {
   /* This makes it instantaneous */
   /* display: */
 }
+
+/* --- Mobile Responsiveness & Bottom Nav --- */
+
+.bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background-color: var(--bg-secondary);
+  border-top: 1px solid var(--bg-tertiary);
+  z-index: 100;
+  justify-content: space-around;
+  align-items: center;
+  padding-bottom: env(safe-area-inset-bottom); /* iOS Safe Area */
+}
+
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  text-decoration: none;
+  gap: 4px;
+  font-size: 0.75rem;
+  padding: 8px;
+  border-radius: 8px;
+  transition: color 0.2s;
+}
+
+.bottom-nav-item.active {
+  color: var(--primary);
+}
+
+.bottom-nav-item:hover {
+  background-color: var(--bg-tertiary);
+}
+
+/* Mobile Breakpoint */
+@media (max-width: 768px) {
+  .sidebar {
+    display: none;
+  }
+
+  .bottom-nav {
+    display: flex;
+  }
+
+  .main-content, .main-content.expanded {
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding-bottom: 80px; /* Space for bottom nav */
+  }
+
+  .page-container {
+    padding: 1rem;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .charts-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* Allow smaller cards */
+    gap: 1rem;
+  }
+
+  /* Calendar Mobile Adjustments */
+  .calendar-layout {
+    flex-direction: column;
+    height: auto;
+    overflow-y: visible; /* Let the page scroll */
+  }
+
+  .calendar-main {
+    padding: 1rem;
+    height: auto;
+    flex: none; /* Don't grow, take content height */
+    overflow: visible;
+  }
+
+  .time-grid-container {
+    height: 50vh; /* Fixed height for scrollable area within page */
+    min-height: 400px;
+  }
+
+  .task-sidebar {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid var(--bg-tertiary);
+    height: auto;
+    padding: 1rem;
+    overflow-y: visible;
+  }
+
+  .days-header {
+    gap: 0.25rem;
+    font-size: 0.75rem;
+  }
+
+  .days-grid {
+    gap: 0.25rem;
+  }
+
+  .day-cell {
+    padding: 0.25rem;
+    border-radius: var(--radius-md);
+  }
+  
+  .day-cell .flex-between {
+      justify-content: center;
+  }
+  
+  .day-cell span {
+      font-size: 0.75rem !important;
+  }
+
+    /* Hide progress bar on tiny screens in month view if needed, or adjust */
+
+    
+
+    .calendar-main header {
+
+      flex-direction: column;
+
+      align-items: flex-start;
+
+      gap: 1rem;
+
+    }
+
+    
+
+    .calendar-main header > div {
+
+        width: 100%;
+
+        justify-content: space-between;
+
+    }
+
+  }
+
+  

@@ -104,6 +104,34 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
     );
 };
 
+const BottomNav = () => {
+  const navItems = [
+      { icon: Activity, label: 'Analytics', path: '/' },
+      { icon: Calendar, label: 'Schedule', path: '/calendar' },
+      { icon: Settings, label: 'Settings', path: '/settings' },
+  ];
+
+  return (
+    <nav className="bottom-nav">
+      {navItems.map((item) => (
+        <NavLink
+          key={item.path}
+          to={item.path}
+          className={({ isActive }) =>
+            `bottom-nav-item ${isActive ? "active" : ""}`
+          }
+        >
+          <item.icon size={24} />
+          <span className="text-xs">{item.label}</span>
+        </NavLink>
+      ))}
+      <div className="bottom-nav-item">
+         <UserButton />
+      </div>
+    </nav>
+  );
+};
+
 const Layout = () => {
     const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -114,6 +142,7 @@ const Layout = () => {
     return (
       <div className="app-wrapper scrollbox">
         <Sidebar isCollapsed={isCollapsed} toggleSidebar={toggleSidebar} />
+        <BottomNav />
         <main className={`main-content ${isCollapsed ? "expanded" : ""}`}>
           <Outlet />
         </main>

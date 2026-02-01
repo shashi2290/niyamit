@@ -79,6 +79,272 @@ const getTopHeight = (startTime, endTime, PIXELS_PER_HOUR = 60) => {
   return { top, height: Math.max(duration, 30) }; // Min height 30px
 };
 
+// --- TaskForm Component ---
+const TaskForm = ({
+  newStartTime, setNewStartTime,
+  newEndTime, setNewEndTime,
+  newTaskTitle, setNewTaskTitle,
+  selectedTagId, setSelectedTagId,
+  tags,
+  isCreatingTag, setIsCreatingTag,
+  newTagName, setNewTagName,
+  handleCreateTag,
+  handleSaveTask,
+  handleCancelEdit,
+  editingTaskId,
+  isEditingLocked,
+  isMobile,
+  handleToggleTask,
+  handleDeleteTask,
+  tasks
+}) => {
+  const currentTask = tasks.find(t => getTaskId(t) === editingTaskId);
+  
+  return (
+    <div className="task-input-wrapper" style={{ border: 'none', padding: 0, background: 'transparent' }}>
+      {editingTaskId && (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            marginBottom: "1rem",
+            alignItems: "center",
+          }}
+        >
+          <span className="text-xs text-primary font-bold uppercase tracking-wider flex items-center gap-1">
+            {isEditingLocked ? (
+               <>
+                 <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--danger)' }}></div>
+                 Locked Task
+               </>
+            ) : "Editing Task"}
+          </span>
+          <button
+            onClick={handleCancelEdit}
+            className="text-xs text-muted hover:text-danger flex items-center gap-1"
+          >
+            <RotateCcw size={12} /> Cancel
+          </button>
+        </div>
+      )}
+
+      {/* Mobile Quick Actions */}
+      {isMobile && editingTaskId && (
+          <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem' }}>
+              <button 
+                onClick={() => handleToggleTask(currentTask)}
+                disabled={isEditingLocked}
+                style={{
+                    flex: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    padding: '0.75rem',
+                    borderRadius: 'var(--radius-md)',
+                    backgroundColor: currentTask?.completed ? 'var(--bg-tertiary)' : 'var(--success)',
+                    color: 'white',
+                    fontWeight: 600,
+                    opacity: isEditingLocked ? 0.5 : 1
+                }}
+              >
+                {currentTask?.completed ? <RotateCcw size={18} /> : <CheckCircle2 size={18} />}
+                {currentTask?.completed ? 'Mark Pending' : 'Mark Done'}
+              </button>
+              
+              <button 
+                onClick={() => handleDeleteTask(editingTaskId)}
+                disabled={isEditingLocked}
+                style={{
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0.75rem',
+                    borderRadius: 'var(--radius-md)',
+                    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                    color: 'var(--danger)',
+                    border: '1px solid var(--danger)',
+                    opacity: isEditingLocked ? 0.5 : 1
+                }}
+              >
+                <Trash2 size={18} />
+              </button>
+          </div>
+      )}
+
+      <div
+        style={{
+          display: "flex",
+          gap: "0.5rem",
+          marginBottom: "0.75rem",
+          alignItems: "center",
+        }}
+      >
+        <div
+          style={{
+            background: isEditingLocked ? "var(--bg-tertiary)" : "var(--bg-secondary)",
+            padding: "0.25rem 0.5rem",
+            borderRadius: "var(--radius-sm)",
+            border: "1px solid var(--bg-tertiary)",
+            flex: 1
+          }}
+        >
+          <input
+            type="time"
+            value={newStartTime}
+            onChange={(e) => setNewStartTime(e.target.value)}
+            className="input-reset"
+            disabled={isEditingLocked}
+            style={{ width: "100%", fontSize: "0.75rem", opacity: isEditingLocked ? 0.5 : 1, textAlign: 'center' }}
+          />
+        </div>
+        <span className="text-muted">-</span>
+        <div
+          style={{
+            background: isEditingLocked ? "var(--bg-tertiary)" : "var(--bg-secondary)",
+            padding: "0.25rem 0.5rem",
+            borderRadius: "var(--radius-sm)",
+            border: "1px solid var(--bg-tertiary)",
+            flex: 1
+          }}
+        >
+          <input
+            type="time"
+            value={newEndTime}
+            onChange={(e) => setNewEndTime(e.target.value)}
+            className="input-reset"
+            disabled={isEditingLocked}
+            style={{ width: "100%", fontSize: "0.75rem", opacity: isEditingLocked ? 0.5 : 1, textAlign: 'center' }}
+          />
+        </div>
+      </div>
+      <input
+        type="text"
+        placeholder={
+          editingTaskId ? "Update task title..." : "Add new task..."
+        }
+        className="input-reset"
+        value={newTaskTitle}
+        onChange={(e) => setNewTaskTitle(e.target.value)}
+        disabled={isEditingLocked}
+        style={{ 
+            opacity: isEditingLocked ? 0.5 : 1,
+            padding: '0.75rem',
+            background: 'var(--bg-secondary)',
+            borderRadius: 'var(--radius-sm)',
+            border: '1px solid var(--bg-tertiary)',
+            marginBottom: '0.75rem'
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") handleSaveTask();
+        }}
+      />
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "0.5rem",
+          marginTop: "0.75rem",
+        }}
+      >
+        {!isCreatingTag ? (
+          <>
+            <select
+              className="input-reset"
+              style={{
+                width: "auto",
+                fontSize: "0.75rem",
+                padding: "0.5rem",
+                borderRadius: "4px",
+                backgroundColor: "var(--bg-tertiary)",
+                opacity: isEditingLocked ? 0.5 : 1,
+                flex: 1
+              }}
+              value={selectedTagId}
+              onChange={(e) => setSelectedTagId(e.target.value)}
+              disabled={isEditingLocked}
+            >
+              {tags.map((tag) => (
+                <option key={tag.id} value={tag.id}>
+                  {tag.label}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => setIsCreatingTag(true)}
+              className="text-xs text-muted hover:text-primary p-2"
+              title="Create new tag"
+              disabled={isEditingLocked}
+              style={{ opacity: isEditingLocked ? 0.5 : 1 }}
+            >
+              <Plus size={16} />
+            </button>
+          </>
+        ) : (
+          <div
+            style={{
+              display: "flex",
+              gap: "0.25rem",
+              flex: 1,
+              alignItems: "center",
+            }}
+          >
+            <input
+              type="text"
+              className="input-reset"
+              style={{
+                fontSize: "0.75rem",
+                padding: "0.25rem",
+                borderBottom: "1px solid var(--primary)",
+              }}
+              placeholder="New Tag Name"
+              autoFocus
+              value={newTagName}
+              onChange={(e) => setNewTagName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleCreateTag();
+                if (e.key === "Escape") setIsCreatingTag(false);
+              }}
+            />
+            <button
+              onClick={handleCreateTag}
+              className="text-[var(--success)]"
+            >
+              <CheckCircle2 size={16} />
+            </button>
+            <button
+              onClick={() => setIsCreatingTag(false)}
+              className="text-[var(--danger)]"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        )}
+        <button
+          onClick={handleSaveTask}
+          className=""
+          disabled={isEditingLocked}
+          style={{
+            marginLeft: "auto",
+            background: isEditingLocked ? "var(--bg-tertiary)" : (editingTaskId ? "var(--primary)" : "var(--primary)"),
+            color: isEditingLocked ? "var(--text-muted)" : (editingTaskId ? "white" : "white"),
+            border: "none",
+            borderRadius: "4px",
+            padding: "0.5rem 1rem",
+            fontSize: "0.75rem",
+            cursor: isEditingLocked ? "not-allowed" : "pointer",
+            fontWeight: 600
+          }}
+        >
+          {isEditingLocked ? "Locked" : (editingTaskId ? "Update" : "Add")}
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const DayTimeGridView = ({
   selectedDate,
   getTasksByDate,
@@ -598,6 +864,17 @@ const CalendarView = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState("Week"); // 'Month' or 'Day'
 
+  // Mobile Detection
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Modal State
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+
   // Task Input State - Initialize with current hour
   const getCurrentHourTime = () => {
     const now = new Date();
@@ -638,11 +915,6 @@ const CalendarView = () => {
       // Check for Ctrl+C / Meta+C
       if ((e.ctrlKey || e.metaKey) && e.key === "c") {
         if (editingTaskId) {
-           // Prevent default only if we are not copying text selection?
-           // Actually, if a user is editing the title and selects text, they want to copy text.
-           // If they are just editing but no text selected, maybe copy task?
-           // Let's stick to: if editingTaskId is set, we copy the task to our internal clipboard
-           // regarless of text selection, but we DON'T preventDefault so system copy works too.
            const task = tasks.find(t => getTaskId(t) === editingTaskId);
            if (task) {
              setClipboardSingleTask(task);
@@ -654,8 +926,6 @@ const CalendarView = () => {
       // Check for Ctrl+V / Meta+V
       if ((e.ctrlKey || e.metaKey) && e.key === "v") {
         if (clipboardSingleTask) {
-          // Heuristic: If active element is an input and has value, assume text paste.
-          // If input is empty or body is active, assume task paste.
           const activeEl = document.activeElement;
           const isInput = activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA";
           const hasText = isInput && activeEl.value.length > 0;
@@ -663,26 +933,21 @@ const CalendarView = () => {
           if (!hasText) {
              e.preventDefault();
              
-             // 1. Calculate Target Date/Time
              const targetDateStr = format(selectedDate, "yyyy-MM-dd");
              const [h, m] = newStartTime.split(':').map(Number);
              const targetDateTime = parse(targetDateStr, "yyyy-MM-dd", new Date());
              targetDateTime.setHours(h, m, 0, 0);
 
-             // 2. Validate Future
              const now = new Date();
              if (targetDateTime < now) {
                 toast.error("Cannot paste task to a past time", { duration: 1000 });
                 return;
              }
 
-             // 3. Create Task
-             // Calculate duration
              const [startH, startM] = clipboardSingleTask.startTime.split(":").map(Number);
              const [endH, endM] = clipboardSingleTask.endTime.split(":").map(Number);
              const durationMins = (endH * 60 + endM) - (startH * 60 + startM);
              
-             // New End Time
              const newStartMins = h * 60 + m;
              const newEndMins = newStartMins + durationMins;
              
@@ -782,13 +1047,17 @@ const CalendarView = () => {
     setEditingTaskId(null);
     setNewTaskTitle("");
 
-    // Focus input
-    setTimeout(() => {
-      const input = document.querySelector(
-        'input[placeholder="Add new task..."]'
-      );
-      if (input) input.focus();
-    }, 50);
+    if (isMobile) {
+        setIsTaskModalOpen(true);
+    } else {
+        // Focus input
+        setTimeout(() => {
+          const input = document.querySelector(
+            'input[placeholder="Add new task..."]'
+          );
+          if (input) input.focus();
+        }, 50);
+    }
   };
 
   // Prepare Edit
@@ -804,11 +1073,15 @@ const CalendarView = () => {
       setSelectedDate(parse(task.date, "yyyy-MM-dd", new Date()));
     }
 
-    // Focus input
-    const input = document.querySelector(
-      'input[placeholder="Add new task..."]'
-    );
-    if (input) input.focus();
+    if (isMobile) {
+        setIsTaskModalOpen(true);
+    } else {
+        // Focus input
+        const input = document.querySelector(
+          'input[placeholder="Add new task..."]'
+        );
+        if (input) input.focus();
+    }
   };
 
   // Cancel Edit
@@ -819,6 +1092,10 @@ const CalendarView = () => {
     setNewStartTime(startTime);
     setNewEndTime(endTime);
     if (tags.length > 0) setSelectedTagId(tags[0].id);
+    
+    if (isMobile) {
+        setIsTaskModalOpen(false);
+    }
   };
 
   const handleSaveTask = () => {
@@ -827,7 +1104,6 @@ const CalendarView = () => {
     let tagToUse = tags.find((t) => t.id === selectedTagId);
     if (!tagToUse && tags.length > 0) tagToUse = tags[0];
 
-    // Default tag if none exists
     if (!tagToUse) {
       tagToUse = { id: "work", label: "Work", color: "#3b82f6" };
     }
@@ -845,7 +1121,7 @@ const CalendarView = () => {
       updateTask(updatedTask);
       setEditingTaskId(null);
     } else {
-      // Create New - MongoDB will assign _id
+      // Create New
       const newTask = {
         title: newTaskTitle,
         category: tagToUse,
@@ -863,6 +1139,10 @@ const CalendarView = () => {
     const { startTime, endTime } = getCurrentHourTime();
     setNewStartTime(startTime);
     setNewEndTime(endTime);
+    
+    if (isMobile) {
+        setIsTaskModalOpen(false);
+    }
   };
 
   const handleDeleteTask = (taskId) => {
@@ -906,78 +1186,21 @@ const CalendarView = () => {
     contextToggleTask(taskId);
 
     if (!wasCompleted) {
-    //   confetti({
-    //     particleCount: 300,
-    //     spread: 100,
-    //     origin: { y: 0.6 },
-    //   });
+      // Confetti logic...
       var count = 200;
-      var defaults = {
-        origin: { y: 0.7 },
-      };
-
+      var defaults = { origin: { y: 0.7 } };
       function fire(particleRatio, opts) {
-        confetti({
-          ...defaults,
-          ...opts,
-          particleCount: Math.floor(count * particleRatio),
-        });
+        confetti({ ...defaults, ...opts, particleCount: Math.floor(count * particleRatio) });
       }
-
-      fire(0.25, {
-        spread: 26,
-        startVelocity: 55,
-      });
-      fire(0.2, {
-        spread: 60,
-      });
-      fire(0.35, {
-        spread: 100,
-        decay: 0.91,
-        scalar: 0.8,
-      });
-      fire(0.1, {
-        spread: 120,
-        startVelocity: 25,
-        decay: 0.92,
-        scalar: 1.2,
-      });
-      fire(0.1, {
-        spread: 120,
-        startVelocity: 45,
-      });
-
-      var defaults = {
-        spread: 360,
-        ticks: 50,
-        gravity: 0,
-        decay: 0.94,
-        startVelocity: 30,
-        colors: ["FFE400", "FFBD00", "E89400", "FFCA6C", "FDFFB8"],
-      };
-
-      function shoot() {
-        confetti({
-          ...defaults,
-          particleCount: 40,
-          scalar: 1.2,
-          shapes: ["star"],
-        });
-
-        confetti({
-          ...defaults,
-          particleCount: 10,
-          scalar: 0.75,
-          shapes: ["circle"],
-        });
-      }
-
-      setTimeout(shoot, 0);
-      setTimeout(shoot, 100);
-      setTimeout(shoot, 200);
+      fire(0.25, { spread: 26, startVelocity: 55 });
+      fire(0.2, { spread: 60 });
+      fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
+      fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
+      fire(0.1, { spread: 120, startVelocity: 45 });
     }
   };
 
+  // ... Copy/Paste handlers ...
   const handleCopyDayTasks = (date) => {
     const tasksToCopy = getTasksByDate(format(date, "yyyy-MM-dd"));
     if (tasksToCopy.length === 0) return;
@@ -986,9 +1209,7 @@ const CalendarView = () => {
 
   const handlePasteDayTasks = (targetDate) => {
     if (!clipboardTasks || clipboardTasks.length === 0) return;
-
     clipboardTasks.forEach((task) => {
-      // Remove _id and id fields - MongoDB will assign new _id
       const { _id, id, ...taskWithoutId } = task;
       const newTask = {
         ...taskWithoutId,
@@ -997,41 +1218,27 @@ const CalendarView = () => {
       };
       addTask(newTask);
     });
-    setClipboardTasks(null); // Clear after paste? Or keep it? Let's clear for now to avoid accidental multiple pastes
+    setClipboardTasks(null);
   };
 
-  // --- Drag and Drop Handlers ---
-
   const handleDragStart = (e, task) => {
-    if (!isTaskEditable(task)) {
-        e.preventDefault();
-        return;
-    }
+    if (!isTaskEditable(task)) { e.preventDefault(); return; }
     e.dataTransfer.setData("taskId", getTaskId(task));
     e.dataTransfer.effectAllowed = "move";
-
-    // Calculate offset from top of task element (assuming 1px = 1min)
     const rect = e.currentTarget.getBoundingClientRect();
     const offsetMinutes = e.clientY - rect.top;
     e.dataTransfer.setData("dragOffset", offsetMinutes.toString());
-
-    // Hack to make the dragged element a bit transparent so we can see grid behind
     if (e.target) e.target.style.opacity = "0.5";
   };
 
-  const handleDragEnd = (e) => {
-    if (e.target) e.target.style.opacity = "";
-  };
+  const handleDragEnd = (e) => { if (e.target) e.target.style.opacity = ""; };
 
   const handleTimeDrop = (e, targetDate) => {
     e.preventDefault();
     const taskId = e.dataTransfer.getData("taskId");
     if (!taskId) return;
-
     const task = tasks.find((t) => getTaskId(t) === taskId);
     if (!task) return;
-
-    // Additional check for drop target, though mostly redundant if start was blocked
     const targetDateObj = new Date(targetDate);
     const today = new Date();
     today.setHours(0,0,0,0);
@@ -1039,57 +1246,30 @@ const CalendarView = () => {
         toast.error("Cannot move task to a past date.", { duration: 1000 });
         return;
     }
-
-    // Calculate Y position relative to the container
     const rect = e.currentTarget.getBoundingClientRect();
-    const offsetY = e.clientY - rect.top; // Relative to viewport top, compensated by rect.top
-
-    // Get the offset within the task that we grabbed
-    const dragOffset = parseInt(
-      e.dataTransfer.getData("dragOffset") || "0",
-      10
-    );
-
-    // 1px = 1 minute (PIXELS_PER_HOUR = 60)
-    // Calculate the theoretical top of the element, not the cursor position
+    const offsetY = e.clientY - rect.top;
+    const dragOffset = parseInt(e.dataTransfer.getData("dragOffset") || "0", 10);
     const minutesRaw = offsetY - dragOffset;
-
-    // Snap to nearest 15 minutes
     const minutesSnapped = Math.round(minutesRaw / 15) * 15;
-
-    // Ensure we don't go negative
     if (minutesSnapped < 0) return;
-
     const newStartH = Math.floor(minutesSnapped / 60);
     const newStartM = minutesSnapped % 60;
-
-    // Calculate duration to preserve it
     const [oldStartH, oldStartM] = task.startTime.split(":").map(Number);
     const [oldEndH, oldEndM] = task.endTime.split(":").map(Number);
-    const durationMinutes =
-      oldEndH * 60 + oldEndM - (oldStartH * 60 + oldStartM);
-
+    const durationMinutes = oldEndH * 60 + oldEndM - (oldStartH * 60 + oldStartM);
     const newEndTotalMins = minutesSnapped + durationMinutes;
     const newEndH = Math.floor(newEndTotalMins / 60);
     const newEndM = newEndTotalMins % 60;
-
-    // Cap at midnight (1440 mins)
     if (newEndTotalMins > 1440) return;
-
-    const formatTime = (h, m) =>
-      `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
-
+    const formatTime = (h, m) => `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
     const updatedTask = {
       ...task,
       date: format(targetDate, "yyyy-MM-dd"),
       startTime: formatTime(newStartH, newStartM),
       endTime: formatTime(newEndH, newEndM),
     };
-
     updateTask(updatedTask);
   };
-
-  // --- Render Components ---
 
   const MonthGridView = () => (
     <div className="month-view-container">
@@ -1098,19 +1278,16 @@ const CalendarView = () => {
           <div key={day}>{day}</div>
         ))}
       </div>
-
       <div className="days-grid">
         {days.map((day) => {
           const status = getDayStatus(day);
           const isSelected = isSameDay(day, selectedDate);
           const isCurrentMonth = isSameMonth(day, monthStart);
           const isToday = isSameDay(day, new Date());
-
           let dayClass = "day-cell";
           if (isSelected) dayClass += " selected";
           if (isToday) dayClass += " today";
           if (!isCurrentMonth) dayClass += " faded";
-
           return (
             <div
               key={day.toString()}
@@ -1119,50 +1296,17 @@ const CalendarView = () => {
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => handleTimeDrop(e, day)}
             >
-              <div
-                className="flex-between"
-                style={{ alignItems: "flex-start" }}
-              >
-                <span
-                  style={{
-                    fontSize: "0.875rem",
-                    fontWeight: 500,
-                    color: isToday ? "var(--primary)" : "inherit",
-                  }}
-                >
+              <div className="flex-between" style={{ alignItems: "flex-start" }}>
+                <span style={{ fontSize: "0.875rem", fontWeight: 500, color: isToday ? "var(--primary)" : "inherit" }}>
                   {format(day, "d")}
                 </span>
               </div>
-
               {status && (
                 <>
-                  <div
-                    style={{
-                      width: "100%",
-                      backgroundColor: "var(--bg-primary)",
-                      borderRadius: "999px",
-                      height: "0.375rem",
-                      marginTop: "0.5rem",
-                      overflow: "hidden",
-                    }}
-                  >
-                    <div
-                      style={{
-                        height: "100%",
-                        backgroundColor: "var(--success)",
-                        width: `${(status.completed / status.total) * 100}%`,
-                        transition: "width 0.3s",
-                      }}
-                    />
+                  <div style={{ width: "100%", backgroundColor: "var(--bg-primary)", borderRadius: "999px", height: "0.375rem", marginTop: "0.5rem", overflow: "hidden" }}>
+                    <div style={{ height: "100%", backgroundColor: "var(--success)", width: `${(status.completed / status.total) * 100}%`, transition: "width 0.3s" }} />
                   </div>
-                  <span
-                    className="text-xs text-muted"
-                    style={{
-                      display: "block",
-                      textAlign: "right",
-                      marginTop: "0.25rem",
-                    }}
-                  >
+                  <span className="text-xs text-muted" style={{ display: "block", textAlign: "right", marginTop: "0.25rem" }}>
                     {status.completed}/{status.total}
                   </span>
                 </>
@@ -1185,11 +1329,7 @@ const CalendarView = () => {
           <div>
             <h2 className="text-2xl font-bold">
               {viewMode === "Month" && format(currentDate, "MMMM yyyy")}
-              {viewMode === "Week" &&
-                `${format(subDays(currentDate, 3), "MMM d")} - ${format(
-                  addDays(currentDate, 3),
-                  "MMM d, yyyy",
-                )}`}
+              {viewMode === "Week" && `${format(subDays(currentDate, 3), "MMM d")} - ${format(addDays(currentDate, 3), "MMM d, yyyy")}`}
               {viewMode === "Day" && format(selectedDate, "MMM d, yyyy")}
             </h2>
             <p className="text-muted">
@@ -1198,60 +1338,88 @@ const CalendarView = () => {
               {viewMode === "Day" && "Daily timeline"}
             </p>
           </div>
-          <div
-            className="flex gap-4 items-center"
-            style={{ display: "flex", gap: "1rem", alignItems: "center" }}
-          >
-            <select
-              className="view-select"
-              value={viewMode}
-              onChange={(e) => setViewMode(e.target.value)}
-            >
+          <div className="flex gap-4 items-center" style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+            <select className="view-select" value={viewMode} onChange={(e) => setViewMode(e.target.value)}>
               <option value="Month">Month View</option>
               <option value="Week">Week View</option>
               <option value="Day">Day View</option>
             </select>
-
             <div className="calendar-controls">
-              <button
-                onClick={
-                  viewMode === "Month"
-                    ? prevMonth
-                    : viewMode === "Week"
-                      ? prevWeek
-                      : prevDay
-                }
-                className="btn-icon"
-              >
-                <ChevronLeft />
-              </button>
-
-              <button
-                onClick={() => {
-                  const now = new Date();
-                  setCurrentDate(now);
-                  setSelectedDate(now);
-                }}
-                className="btn-sm"
-              >
-                {buttonLabel}
-              </button>
-
-              <button
-                onClick={
-                  viewMode === "Month"
-                    ? nextMonth
-                    : viewMode === "Week"
-                      ? nextWeek
-                      : nextDay
-                }
-                className="btn-icon"
-              >
-                <ChevronRight />
-              </button>
+              <button onClick={viewMode === "Month" ? prevMonth : viewMode === "Week" ? prevWeek : prevDay} className="btn-icon"><ChevronLeft /></button>
+              <button onClick={() => { const now = new Date(); setCurrentDate(now); setSelectedDate(now); }} className="btn-sm">Today</button>
+              <button onClick={viewMode === "Month" ? nextMonth : viewMode === "Week" ? nextWeek : nextDay} className="btn-icon"><ChevronRight /></button>
             </div>
           </div>
         </header>
+
+        {/* Mobile: Horizontal Task List for Selected Date */}
+        {isMobile && selectedDateTasks.length > 0 && (
+            <div className="mb-4">
+                <div 
+                    style={{ 
+                        display: 'flex', 
+                        gap: '1rem', 
+                        overflowX: 'auto', 
+                        paddingBottom: '0.5rem',
+                        scrollbarWidth: 'none',
+                        WebkitOverflowScrolling: 'touch',
+                        paddingLeft: '4px', // slight padding for shadow
+                        paddingRight: '4px'
+                    }}
+                >
+                    {selectedDateTasks.map((task) => (
+                        <div 
+                            key={getTaskId(task)}
+                            className="glass-panel"
+                            style={{ 
+                                minWidth: '220px', 
+                                maxWidth: '220px',
+                                flexShrink: 0,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                padding: '0.75rem',
+                                borderLeft: `4px solid ${task.category?.color || 'var(--primary)'}`
+                            }}
+                        >
+                            <button 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleToggleTask(task);
+                                }}
+                                style={{ 
+                                    color: task.completed ? 'var(--success)' : 'var(--text-muted)',
+                                    flexShrink: 0
+                                }}
+                            >
+                                {task.completed ? <CheckCircle2 size={24} /> : <Circle size={24} />}
+                            </button>
+                            <div 
+                                style={{ flex: 1, overflow: 'hidden' }}
+                                onClick={() => handleEditClick(task)}
+                            >
+                                <p style={{ 
+                                    fontWeight: 600, 
+                                    textDecoration: task.completed ? 'line-through' : 'none',
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    fontSize: '0.875rem'
+                                }}>
+                                    {task.title}
+                                </p>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                                    <Clock size={10} className="text-muted" />
+                                    <span className="text-xs text-muted">
+                                        {task.startTime} - {task.endTime}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        )}
 
         {viewMode === "Month" && <MonthGridView />}
         {viewMode === "Week" && (
@@ -1293,310 +1461,77 @@ const CalendarView = () => {
           </p>
         </div>
 
-        {/* Task Form (Add/Edit) */}
-        <div className="task-input-wrapper">
-          {editingTaskId && (
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                marginBottom: "0.5rem",
-                alignItems: "center",
-              }}
-            >
-              <span className="text-xs text-primary font-bold uppercase tracking-wider flex items-center gap-1">
-                {isEditingLocked ? (
-                   <>
-                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--danger)' }}></div>
-                     Locked Task
-                   </>
-                ) : "Editing Task"}
-              </span>
-              <button
-                onClick={handleCancelEdit}
-                className="text-xs text-muted hover:text-danger flex items-center gap-1"
-              >
-                <RotateCcw size={12} /> Cancel
-              </button>
-            </div>
-          )}
-
-          <div
-            style={{
-              display: "flex",
-              gap: "0.5rem",
-              marginBottom: "0.75rem",
-              alignItems: "center",
-            }}
-          >
-            <div
-              style={{
-                background: isEditingLocked ? "var(--bg-tertiary)" : "var(--bg-secondary)",
-                padding: "0.25rem 0.5rem",
-                borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--bg-tertiary)",
-              }}
-            >
-              <input
-                type="time"
-                value={newStartTime}
-                onChange={(e) => setNewStartTime(e.target.value)}
-                className="input-reset"
-                disabled={isEditingLocked}
-                style={{ width: "auto", fontSize: "0.75rem", opacity: isEditingLocked ? 0.5 : 1 }}
-              />
-            </div>
-            <span className="text-muted">-</span>
-            <div
-              style={{
-                background: isEditingLocked ? "var(--bg-tertiary)" : "var(--bg-secondary)",
-                padding: "0.25rem 0.5rem",
-                borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--bg-tertiary)",
-              }}
-            >
-              <input
-                type="time"
-                value={newEndTime}
-                onChange={(e) => setNewEndTime(e.target.value)}
-                className="input-reset"
-                disabled={isEditingLocked}
-                style={{ width: "auto", fontSize: "0.75rem", opacity: isEditingLocked ? 0.5 : 1 }}
-              />
-            </div>
-          </div>
-          <input
-            type="text"
-            placeholder={
-              editingTaskId ? "Update task title..." : "Add new task..."
-            }
-            className="input-reset"
-            value={newTaskTitle}
-            onChange={(e) => setNewTaskTitle(e.target.value)}
-            disabled={isEditingLocked}
-            style={{ opacity: isEditingLocked ? 0.5 : 1 }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleSaveTask();
-            }}
-          />
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              marginTop: "0.75rem",
-            }}
-          >
-            {!isCreatingTag ? (
-              <>
-                <select
-                  className="input-reset"
-                  style={{
-                    width: "auto",
-                    fontSize: "0.75rem",
-                    padding: "0.25rem 0.5rem",
-                    borderRadius: "4px",
-                    backgroundColor: "var(--bg-tertiary)",
-                    opacity: isEditingLocked ? 0.5 : 1
-                  }}
-                  value={selectedTagId}
-                  onChange={(e) => setSelectedTagId(e.target.value)}
-                  disabled={isEditingLocked}
-                >
-                  {tags.map((tag) => (
-                    <option key={tag.id} value={tag.id}>
-                      {tag.label}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  onClick={() => setIsCreatingTag(true)}
-                  className="text-xs text-muted hover:text-primary"
-                  title="Create new tag"
-                  disabled={isEditingLocked}
-                  style={{ opacity: isEditingLocked ? 0.5 : 1 }}
-                >
-                  <Plus size={16} />
-                </button>
-              </>
-            ) : (
-              <div
-                style={{
-                  display: "flex",
-                  gap: "0.25rem",
-                  flex: 1,
-                  alignItems: "center",
-                }}
-              >
-                <input
-                  type="text"
-                  className="input-reset"
-                  style={{
-                    fontSize: "0.75rem",
-                    padding: "0.25rem",
-                    borderBottom: "1px solid var(--primary)",
-                  }}
-                  placeholder="New Tag Name"
-                  autoFocus
-                  value={newTagName}
-                  onChange={(e) => setNewTagName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleCreateTag();
-                    if (e.key === "Escape") setIsCreatingTag(false);
-                  }}
+        {/* Task Form (Add/Edit) - Only on Desktop */}
+        {!isMobile && (
+            <div className="task-input-wrapper">
+                <TaskForm 
+                    tasks={tasks}
+                    handleToggleTask={handleToggleTask}
+                    handleDeleteTask={handleDeleteTask}
+                    isMobile={isMobile}
+                    newStartTime={newStartTime} setNewStartTime={setNewStartTime}
+                    newEndTime={newEndTime} setNewEndTime={setNewEndTime}
+                    newTaskTitle={newTaskTitle} setNewTaskTitle={setNewTaskTitle}
+                    selectedTagId={selectedTagId} setSelectedTagId={setSelectedTagId}
+                    tags={tags}
+                    isCreatingTag={isCreatingTag} setIsCreatingTag={setIsCreatingTag}
+                    newTagName={newTagName} setNewTagName={setNewTagName}
+                    handleCreateTag={handleCreateTag}
+                    handleSaveTask={handleSaveTask}
+                    handleCancelEdit={handleCancelEdit}
+                    editingTaskId={editingTaskId}
+                    isEditingLocked={isEditingLocked}
                 />
-                <button
-                  onClick={handleCreateTag}
-                  className="text-[var(--success)]"
-                >
-                  <CheckCircle2 size={16} />
-                </button>
-                <button
-                  onClick={() => setIsCreatingTag(false)}
-                  className="text-[var(--danger)]"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            )}
-            <button
-              onClick={handleSaveTask}
-              className=""
-              disabled={isEditingLocked}
-              style={{
-                marginLeft: "auto",
-                background: isEditingLocked ? "var(--bg-tertiary)" : (editingTaskId ? "var(--primary)" : "var(--primary)"),
-                color: isEditingLocked ? "var(--text-muted)" : (editingTaskId ? "white" : "white"),
-                border: "none",
-                borderRadius: "4px",
-                padding: "2px 8px",
-                fontSize: "0.75rem",
-                cursor: isEditingLocked ? "not-allowed" : "pointer",
-              }}
-            >
-              {isEditingLocked ? "Locked" : (editingTaskId ? "Update" : "Add")}
-            </button>
-          </div>
-        </div>
+            </div>
+        )}
 
-        <div
-          style={{
-            flex: 1,
-            overflowY: "auto",
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.75rem",
-          }}
-          className="scrollbox"
-        >
+        <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "0.75rem" }} className="scrollbox">
           {selectedDateTasks.length > 0 ? (
             selectedDateTasks.map((task) => {
               const isMissed = !task.completed && !isTaskEditable(task);
               return (
                 <div
                   key={getTaskId(task)}
-                  className={`task-item ${
-                    task.completed ? "task-completed" : ""
-                  } ${isMissed ? "task-missed" : ""}`}
+                  className={`task-item ${task.completed ? "task-completed" : ""} ${isMissed ? "task-missed" : ""}`}
                 >
                   <button
                     onClick={() => handleToggleTask(task)}
-                    style={{
-                      color: task.completed
-                        ? "var(--success)"
-                        : isMissed
-                          ? "var(--danger)"
-                          : "var(--text-muted)",
-                    }}
+                    style={{ color: task.completed ? "var(--success)" : isMissed ? "var(--danger)" : "var(--text-muted)" }}
                   >
-                    {task.completed ? (
-                      <CheckCircle2 size={20} />
-                    ) : isMissed ? (
-                      <X size={20} />
-                    ) : (
-                      <Circle size={20} />
-                    )}
+                    {task.completed ? <CheckCircle2 size={20} /> : isMissed ? <X size={20} /> : <Circle size={20} />}
                   </button>
                   <div style={{ flex: 1 }}>
                     <div className="flex-between">
-                      <p className="task-title" style={{ fontWeight: 500 }}>
-                        {task.title}
-                      </p>
+                      <p className="task-title" style={{ fontWeight: 500 }}>{task.title}</p>
                       {task.startTime && (
-                        <span
-                          className="text-xs text-muted"
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "4px",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
+                        <span className="text-xs text-muted" style={{ display: "flex", alignItems: "center", gap: "4px", whiteSpace: "nowrap" }}>
                           <Clock size={10} /> {task.startTime} - {task.endTime}
                         </span>
                       )}
                     </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: "0.5rem",
-                        marginTop: "0.5rem",
-                        alignItems: "center",
-                      }}
-                    >
-                      <span
-                        className="badge"
-                        style={{
-                          backgroundColor: task.category.color,
-                          color: "white",
-                        }}
-                      >
-                        {task.category.label}
-                      </span>
-
-                      <button
-                        onClick={() => handleEditClick(task)}
-                        className="text-muted hover:text-primary ml-auto"
-                        style={{ marginLeft: "auto", padding: "4px" }}
-                        title="Edit Task"
-                      >
-                        <Pencil size={14} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteTask(getTaskId(task))}
-                        className="text-muted hover:text-danger"
-                        style={{ padding: "4px" }}
-                        title="Delete Task"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                    <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem", alignItems: "center" }}>
+                      <span className="badge" style={{ backgroundColor: task.category.color, color: "white" }}>{task.category.label}</span>
+                      <button onClick={() => handleEditClick(task)} className="text-muted hover:text-primary ml-auto" style={{ marginLeft: "auto", padding: "4px" }} title="Edit Task"><Pencil size={14} /></button>
+                      <button onClick={() => handleDeleteTask(getTaskId(task))} className="text-muted hover:text-danger" style={{ padding: "4px" }} title="Delete Task"><Trash2 size={14} /></button>
                     </div>
                   </div>
                 </div>
               );
             })
           ) : (
-            <div
-              className="text-center text-muted"
-              style={{ padding: "2.5rem 0" }}
-            >
+            <div className="text-center text-muted" style={{ padding: "2.5rem 0" }}>
               <p>No tasks for this day.</p>
               <button
                 onClick={() => {
-                  handleSaveTask();
-                  //   document
-                  //     .querySelector('input[placeholder="Add new task..."]')
-                  //     .focus()
+                    // If desktop, focus input. If mobile, open modal.
+                    if (isMobile) {
+                        setIsTaskModalOpen(true);
+                    } else {
+                        handleSaveTask(); // Just focuses input basically
+                    }
                 }}
                 className="mt-4"
-                style={{
-                  padding: "0.5rem 1rem",
-                  fontSize: "0.875rem",
-                  backgroundColor: "var(--primary)",
-                  color: "white",
-                  borderRadius: "var(--radius-sm)",
-                }}
+                style={{ padding: "0.5rem 1rem", fontSize: "0.875rem", backgroundColor: "var(--primary)", color: "white", borderRadius: "var(--radius-sm)" }}
               >
                 Add Task
               </button>
@@ -1604,6 +1539,81 @@ const CalendarView = () => {
           )}
         </div>
       </aside>
+
+      {/* Mobile FAB for adding task */}
+      {isMobile && (
+        <button
+            onClick={() => {
+                setEditingTaskId(null);
+                setNewTaskTitle("");
+                setIsTaskModalOpen(true);
+            }}
+            style={{
+                position: 'fixed',
+                bottom: '80px', // Above bottom nav
+                right: '20px',
+                width: '56px',
+                height: '56px',
+                borderRadius: '50%',
+                backgroundColor: 'var(--primary)',
+                color: 'white',
+                border: 'none',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 90
+            }}
+        >
+            <Plus size={28} />
+        </button>
+      )}
+
+      {/* Mobile Task Modal */}
+      {isMobile && isTaskModalOpen && (
+        <div style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.6)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 200,
+            display: 'flex',
+            alignItems: 'flex-end', // Bottom sheet style
+            justifyContent: 'center'
+        }} onClick={() => setIsTaskModalOpen(false)}>
+            <div style={{
+                width: '100%',
+                maxWidth: '600px',
+                backgroundColor: 'var(--bg-secondary)',
+                borderTopLeftRadius: '16px',
+                borderTopRightRadius: '16px',
+                padding: '1.5rem',
+                boxShadow: '0 -4px 20px rgba(0,0,0,0.4)',
+                animation: 'slideUp 0.3s ease-out'
+            }} onClick={e => e.stopPropagation()}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <h3 className="text-xl font-bold">{editingTaskId ? "Edit Task" : "New Task"}</h3>
+                    <button onClick={() => setIsTaskModalOpen(false)}><X /></button>
+                </div>
+                
+                <TaskForm 
+                    tasks={tasks}
+                    newStartTime={newStartTime} setNewStartTime={setNewStartTime}
+                    newEndTime={newEndTime} setNewEndTime={setNewEndTime}
+                    newTaskTitle={newTaskTitle} setNewTaskTitle={setNewTaskTitle}
+                    selectedTagId={selectedTagId} setSelectedTagId={setSelectedTagId}
+                    tags={tags}
+                    isCreatingTag={isCreatingTag} setIsCreatingTag={setIsCreatingTag}
+                    newTagName={newTagName} setNewTagName={setNewTagName}
+                    handleCreateTag={handleCreateTag}
+                    handleSaveTask={handleSaveTask}
+                    handleCancelEdit={handleCancelEdit}
+                    editingTaskId={editingTaskId}
+                    isEditingLocked={isEditingLocked}
+                />
+            </div>
+        </div>
+      )}
     </div>
   );
 };
