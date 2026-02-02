@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "apple-touch-icon.png", "mask-icon.svg"],
+      includeAssets: ["vite.png", "vite1.svg"],
       devOptions: {
         enabled: true,
       },
@@ -19,6 +19,7 @@ export default defineConfig({
         theme_color: "#0f172a",
         background_color: "#0f172a",
         display: "standalone",
+        start_url: "/",
         icons: [
           {
             src: "vite.png",
@@ -29,6 +30,13 @@ export default defineConfig({
             src: "vite.png",
             sizes: "512x512",
             type: "image/png",
+            purpose: "any",
+          },
+          {
+            src: "vite.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
           },
         ],
       },
