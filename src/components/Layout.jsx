@@ -17,7 +17,9 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
         <div className="sidebar-header">
           <div className="flex-between w-full">
             {!isCollapsed && (
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "10px" }}
+              >
                 <img
                   src="/vite.png"
                   alt="Niyamit Logo"
@@ -29,27 +31,36 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
                     borderRadius: "50%",
                   }}
                 />
-                <h1 className="text-xl font-bold gradient-text" style={{ margin: 0 }}>
-                  Niyamit
+                <h1
+                  className="text-xl font-bold gradient-text"
+                  style={{ margin: 0 }}
+                >
+                  _niyamit_
                 </h1>
               </div>
             )}
             {isCollapsed && (
-               <img
-               src="/vite.png"
-               alt="Niyamit Logo"
-               style={{
-                 width: "32px",
-                 height: "32px",
-                 borderRadius: "50%",
-               }}
-             />
+              <img
+                src="/vite.png"
+                alt="Niyamit Logo"
+                style={{
+                  width: "32px",
+                  height: "32px",
+                  borderRadius: "50%",
+                }}
+              />
             )}
             <button onClick={toggleSidebar} className="btn-icon toggle-btn">
-              {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+              {isCollapsed ? (
+                <ChevronRight size={20} />
+              ) : (
+                <ChevronLeft size={20} />
+              )}
             </button>
           </div>
-          {!isCollapsed && <p className="text-sm text-muted mt-2">Organize your life</p>}
+          {!isCollapsed && (
+            <p className="text-sm text-muted mt-2">Organize your life</p>
+          )}
         </div>
 
         <nav className="sidebar-nav">
@@ -63,7 +74,9 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
               title={isCollapsed ? item.label : ""}
             >
               <item.icon size={20} />
-              {!isCollapsed && <span className="font-medium">{item.label}</span>}
+              {!isCollapsed && (
+                <span className="font-medium">{item.label}</span>
+              )}
             </NavLink>
           ))}
         </nav>
@@ -71,7 +84,12 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
         <div className="sidebar-footer">
           <div
             className="user-profile"
-            style={{ display: "flex", alignItems: "center", gap: "10px", justifyContent: isCollapsed ? "center" : "flex-start" }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              justifyContent: isCollapsed ? "center" : "flex-start",
+            }}
           >
             <UserButton />
             {!isCollapsed && (
