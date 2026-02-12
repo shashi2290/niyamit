@@ -52,7 +52,7 @@ const Settings = () => {
     ];
 
     return (
-        <div className="page-container">
+        <div className="page-container settings-page">
             <header className="page-header">
                 <div>
                     <h1 className="text-3xl font-bold gradient-text">Settings</h1>

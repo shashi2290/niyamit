@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { LayoutDashboard, Calendar, CheckSquare, Settings, Activity, ChevronLeft, ChevronRight } from 'lucide-react';
 import { UserButton, useUser } from '@clerk/clerk-react';
+import OnboardingTour from './OnboardingTour';
 
 const Sidebar = ({ isCollapsed, toggleSidebar }) => {
     const { user } = useUser();
@@ -159,6 +160,7 @@ const Layout = () => {
 
     return (
       <div className="app-wrapper scrollbox">
+        <OnboardingTour />
         <Sidebar isCollapsed={isCollapsed} toggleSidebar={toggleSidebar} />
         <BottomNav />
         <main className={`main-content ${isCollapsed ? "expanded" : ""}`}>

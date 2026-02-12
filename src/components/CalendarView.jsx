@@ -252,7 +252,7 @@ const TaskForm = ({
         {!isCreatingTag ? (
           <>
             <select
-              className="input-reset"
+              className="input-reset tag-selector"
               style={{
                 width: "auto",
                 fontSize: "0.75rem",
@@ -1463,8 +1463,8 @@ const CalendarView = () => {
 
         {/* Task Form (Add/Edit) - Only on Desktop */}
         {!isMobile && (
-            <div className="task-input-wrapper">
-                <TaskForm 
+            <div className="task-input-wrapper task-form-container">
+                <TaskForm
                     tasks={tasks}
                     handleToggleTask={handleToggleTask}
                     handleDeleteTask={handleDeleteTask}

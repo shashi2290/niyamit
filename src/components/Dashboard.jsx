@@ -419,6 +419,35 @@ const Dashboard = () => {
 
     return (
       <div className="page-container">
+        {/* Mobile Logo Header */}
+        {isMobile && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              marginBottom: "1rem",
+              paddingBottom: "0.5rem",
+              borderBottom: "1px solid var(--bg-tertiary)",
+            }}
+          >
+            <img
+              src="/vite.png"
+              alt="Niyamit Logo"
+              style={{
+                width: "32px",
+                height: "32px",
+                borderRadius: "50%",
+              }}
+            />
+            <h1
+              className="text-xl font-bold gradient-text"
+              style={{ margin: 0 }}
+            >
+              _niyamit_
+            </h1>
+          </div>
+        )}
         <header className="page-header">
           <div>
             <h1 className="text-3xl font-bold gradient-text">Dashboard</h1>
