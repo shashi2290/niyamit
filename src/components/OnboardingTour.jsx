@@ -16,140 +16,125 @@ const OnboardingTour = () => {
   const [isNavigating, setIsNavigating] = useState(false);
   const pendingStepIndex = useRef(null);
 
-  // Define steps with their associated routes
+  // Define steps - use mobile-friendly targets when on mobile
   const steps = useMemo(() => {
+    const isMobileView = window.innerWidth < 768;
     return [
       {
-        target: ".sidebar",
+        target: isMobileView ? '.bottom-nav' : '.sidebar',
         content: (
           <div>
-            <h3 style={{ margin: "0 0 10px 0", color: "var(--primary)" }}>
+            <h3 style={{ margin: '0 0 10px 0', color: 'var(--primary)' }}>
               Welcome to Niyamit! 👋
             </h3>
             <p style={{ margin: 0 }}>
-              This is your personal life organizer. Let me show you around the
-              app.
+              This is your personal life organizer. Let me show you around the app.
             </p>
           </div>
         ),
-        placement: "right",
+        placement: isMobileView ? 'top' : 'right',
         disableBeacon: true,
-        route: "/", // Dashboard page
+        route: '/',
       },
       {
-        target: ".sidebar-nav .nav-item:first-child",
+        target: isMobileView ? '.bottom-nav-item:first-child' : '.sidebar-nav .nav-item:first-child',
         content: (
           <div>
-            <h3 style={{ margin: "0 0 10px 0", color: "var(--primary)" }}>
-              Navigation
-            </h3>
+            <h3 style={{ margin: '0 0 10px 0', color: 'var(--primary)' }}>Navigation</h3>
             <p style={{ margin: 0 }}>
-              Use these links to switch between Analytics Dashboard, Calendar
-              Schedule, and Settings.
+              Use these links to switch between Analytics Dashboard, Calendar Schedule, and Settings.
             </p>
           </div>
         ),
-        placement: "right",
-        route: "/",
+        placement: isMobileView ? 'top' : 'right',
+        route: '/',
       },
       {
-        target: '.task-form-container, [class*="task-form"]',
+        target: isMobileView ? '.calendar-layout' : '.task-form-container, [class*="task-form"]',
         content: (
           <div>
-            <h3 style={{ margin: "0 0 10px 0", color: "var(--primary)" }}>
-              Creating Tasks
-            </h3>
+            <h3 style={{ margin: '0 0 10px 0', color: 'var(--primary)' }}>Creating Tasks</h3>
             <p style={{ margin: 0 }}>
-              Create new tasks by entering a title, selecting time range, and
-              choosing a category tag. Press Enter or click "Add" to save!
+              {isMobileView 
+                ? 'Tap the + button to create new tasks. Select time range and choose a category tag.'
+                : 'Create new tasks by entering a title, selecting time range, and choosing a category tag. Press Enter or click "Add" to save!'}
             </p>
           </div>
         ),
-        placement: "bottom",
-        route: "/calendar",
+        placement: 'bottom',
+        route: '/calendar',
       },
       {
-        target: '.task-sidebar, aside[class*="task-sidebar"]',
+        target: isMobileView ? '.calendar-main' : '.task-sidebar, aside[class*="task-sidebar"]',
         content: (
           <div>
-            <h3 style={{ margin: "0 0 10px 0", color: "var(--primary)" }}>
-              Your Tasks
-            </h3>
+            <h3 style={{ margin: '0 0 10px 0', color: 'var(--primary)' }}>Your Tasks</h3>
             <p style={{ margin: 0 }}>
-              Your tasks for the selected day appear here. Click the circle to
-              mark them complete, or click the task itself to edit details.
+              {isMobileView
+                ? 'Your tasks appear in the calendar. Tap to edit, swipe to navigate dates.'
+                : 'Your tasks for the selected day appear here. Click the circle to mark them complete, or click the task itself to edit details.'}
             </p>
           </div>
         ),
-        placement: "left",
-        route: "/calendar",
+        placement: isMobileView ? 'bottom' : 'left',
+        route: '/calendar',
       },
       {
         target: '[class*="time-grid"]',
         content: (
           <div>
-            <h3 style={{ margin: "0 0 10px 0", color: "var(--primary)" }}>
-              Drag & Drop
-            </h3>
+            <h3 style={{ margin: '0 0 10px 0', color: 'var(--primary)' }}>Drag & Drop</h3>
             <p style={{ margin: 0 }}>
-              You can drag and drop tasks to reschedule them to different times
-              or even different days! Try it out.
+              {isMobileView
+                ? 'Tap any time slot to quickly add a task at that time.'
+                : 'You can drag and drop tasks to reschedule them to different times or even different days! Try it out.'}
             </p>
           </div>
         ),
-        placement: "top",
-        route: "/calendar",
+        placement: 'top',
+        route: '/calendar',
       },
       {
         target: '.tag-selector, select[class*="tag"]',
         content: (
           <div>
-            <h3 style={{ margin: "0 0 10px 0", color: "var(--primary)" }}>
-              Organize with Tags
-            </h3>
+            <h3 style={{ margin: '0 0 10px 0', color: 'var(--primary)' }}>Organize with Tags</h3>
             <p style={{ margin: 0 }}>
-              Use tags to categorize your tasks (Work, Personal, Health, etc.).
-              Click the + button to create custom tags!
+              Use tags to categorize your tasks (Work, Personal, Health, etc.). Click the + button to create custom tags!
             </p>
           </div>
         ),
-        placement: "top",
-        route: "/calendar",
+        placement: 'top',
+        route: '/calendar',
       },
       {
-        target: ".settings-page",
+        target: '.settings-page',
         content: (
           <div>
-            <h3 style={{ margin: "0 0 10px 0", color: "var(--primary)" }}>
-              Settings
-            </h3>
+            <h3 style={{ margin: '0 0 10px 0', color: 'var(--primary)' }}>Settings</h3>
             <p style={{ margin: 0 }}>
-              Manage your tags and customize your experience here. You can edit
-              tag names and colors.
+              Manage your tags and customize your experience here. You can edit tag names and colors.
             </p>
           </div>
         ),
-        placement: "right",
-        route: "/settings",
+        placement: isMobileView ? 'bottom' : 'right',
+        route: '/settings',
       },
       {
-        target: ".page-container",
+        target: '.page-container',
         content: (
           <div>
-            <h3 style={{ margin: "0 0 10px 0", color: "var(--primary)" }}>
-              You're All Set! 🎉
-            </h3>
+            <h3 style={{ margin: '0 0 10px 0', color: 'var(--primary)' }}>You're All Set! 🎉</h3>
             <p style={{ margin: 0 }}>
-              Start by completing one of the welcome tasks. Remember: Tasks can
-              be edited within 3 hours after their scheduled time. Good luck!
+              Start by completing one of the welcome tasks. Remember: Tasks can be edited within 3 hours after their scheduled time. Good luck!
             </p>
           </div>
         ),
-        placement: "center",
-        route: "/settings",
+        placement: 'center',
+        route: '/settings',
       },
     ];
-  },[]);
+  }, []);
 
   // Navigate to the correct route for a step
   const navigateToStepRoute = useCallback((targetStepIndex) => {
